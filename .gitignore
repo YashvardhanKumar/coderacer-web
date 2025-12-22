@@ -1,0 +1,123 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pip-cache/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+.env
+.env.local
+.env.*.local
+
+# Virtual environments
+.venv
+venv/
+env/
+ENV/
+.coderacer/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Node.js / npm / yarn
+node_modules/
+package-lock.json
+yarn.lock
+.npm
+.eslintcache
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor temp files
+*.bak
+*.tmp
+*.swp
+*~
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production.local
+
+# Docker
+.dockerignore
+
+# IDE specific
+.vscode/settings.json
+.idea/
+
+# OS specific
+.vagrant/
+Thumbs.db
+.DS_Store
+
+# Miscellaneous
+.cache/
+.python-version
+*.orig
+.mypy_cache/
+.dmypy.json
+dmypy.json

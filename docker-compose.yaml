@@ -1,0 +1,135 @@
+# Comments are provided throughout this file to help you get started.
+# If you need more help, visit the Docker Compose reference guide at
+# https://docs.docker.com/go/compose-spec-reference/
+
+# Here the instructions define your application as a service called "server".
+# This service is built from the Dockerfile in the current directory.
+# You can add other services your application may depend on here, such as a
+# database or a cache. For examples, see the Awesome Compose repository:
+# https://github.com/docker/awesome-compose
+services:
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: always
+    environment:
+      NGINX_ENTRYPOINT_QUIET_LOGS: 1
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - 80:80
+    depends_on:
+      - api
+      - web
+    networks:
+      - app-network
+  api:
+    container_name: api
+    build:
+      context: ./api
+    env_file:
+      - ./api/.env
+    restart: always
+    init: true
+    stdin_open: true
+    tty: true
+    depends_on:
+      - cdb
+      - redis
+      - cpp
+      - java
+      - typescript
+      - python
+    volumes:
+      - ./api:/home/coderacer/api/
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    networks:
+      - app-network
+  cpp:
+    build: 
+      context: ./api/runners/cpp
+    container_name: runner-cpp
+    tty: true
+    networks:
+      - app-network
+
+  java:
+    build: 
+      context: ./api/runners/java
+    container_name: runner-java
+    tty: true
+    networks:
+      - app-network
+
+  typescript:
+    build: 
+      context: ./api/runners/typescript
+    container_name: runner-node
+    tty: true
+    networks:
+      - app-network
+
+  python:
+    build: 
+      context: ./api/runners/python
+    container_name: runner-python
+    tty: true
+    networks:
+      - app-network
+
+  web:
+    container_name: web
+    build:
+      context: ./web
+    environment:
+      NODE_ENV: production
+    restart: always
+    init: true
+    stdin_open: true
+    tty: true
+    command: bun dev
+    volumes:
+      - ./web:/home/coderacer/web/
+    networks:
+      - app-network
+
+  cdb:
+    image: postgres:16-alpine
+    container_name: postgresql
+    restart: always
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: admin
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    networks:
+      - app-network
+  
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: redis-stack
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app-network
+
+volumes:
+  pg_data:
+  redis_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

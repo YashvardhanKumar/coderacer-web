@@ -1,0 +1,2405 @@
+openapi: 3.0.3
+info:
+  title: Coderacer API
+  version: 1.0.0
+  description: This is the API documentation for the Coderacer application.
+paths:
+  /api/codeblocks/:
+    get:
+      operationId: api_codeblocks_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCodeblockList'
+          description: ''
+    post:
+      operationId: api_codeblocks_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Codeblock'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Codeblock'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Codeblock'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Codeblock'
+          description: ''
+  /api/codeblocks/{id}/:
+    get:
+      operationId: api_codeblocks_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Code Block.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Codeblock'
+          description: ''
+    put:
+      operationId: api_codeblocks_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Code Block.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Codeblock'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Codeblock'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Codeblock'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Codeblock'
+          description: ''
+    patch:
+      operationId: api_codeblocks_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Code Block.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCodeblock'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCodeblock'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCodeblock'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Codeblock'
+          description: ''
+    delete:
+      operationId: api_codeblocks_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Code Block.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/discussions/:
+    get:
+      operationId: api_discussions_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDiscussListList'
+          description: ''
+    post:
+      operationId: api_discussions_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscussDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DiscussDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DiscussDetail'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscussDetail'
+          description: ''
+  /api/discussions/{id}/:
+    get:
+      operationId: api_discussions_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Discussion.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscussDetail'
+          description: ''
+    put:
+      operationId: api_discussions_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Discussion.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscussDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DiscussDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DiscussDetail'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscussDetail'
+          description: ''
+    patch:
+      operationId: api_discussions_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Discussion.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDiscussDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDiscussDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDiscussDetail'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscussDetail'
+          description: ''
+    delete:
+      operationId: api_discussions_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Discussion.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/discussions/by_problem/:
+    get:
+      operationId: api_discussions_by_problem_retrieve
+      description: Get discussions for a specific problem
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscussDetail'
+          description: ''
+  /api/discussions/my_discussions/:
+    get:
+      operationId: api_discussions_my_discussions_retrieve
+      description: Get current user's discussions
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscussDetail'
+          description: ''
+  /api/problems/:
+    get:
+      operationId: api_problems_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProblemListList'
+          description: ''
+    post:
+      operationId: api_problems_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProblemDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProblemDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProblemDetail'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+  /api/problems/{id}/:
+    get:
+      operationId: api_problems_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+    put:
+      operationId: api_problems_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProblemDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProblemDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProblemDetail'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+    patch:
+      operationId: api_problems_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProblemDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProblemDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProblemDetail'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+    delete:
+      operationId: api_problems_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/problems/{id}/discussions/:
+    get:
+      operationId: api_problems_discussions_retrieve
+      description: Get all discussions for a problem
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+  /api/problems/{id}/solutions/:
+    get:
+      operationId: api_problems_solutions_retrieve
+      description: Get all solutions for a problem
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+  /api/problems/{id}/statistics/:
+    get:
+      operationId: api_problems_statistics_retrieve
+      description: Get statistics for a specific problem
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Problem.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+  /api/problems/by_tag/:
+    get:
+      operationId: api_problems_by_tag_retrieve
+      description: Filter problems by tag
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+  /api/problems/my_attempts/:
+    get:
+      operationId: api_problems_my_attempts_retrieve
+      description: Get problems the user has attempted
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+  /api/solutions/:
+    get:
+      operationId: api_solutions_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSolutionListList'
+          description: ''
+    post:
+      operationId: api_solutions_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolutionDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SolutionDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SolutionDetail'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolutionDetail'
+          description: ''
+  /api/solutions/{id}/:
+    get:
+      operationId: api_solutions_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Solution.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolutionDetail'
+          description: ''
+    put:
+      operationId: api_solutions_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Solution.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolutionDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SolutionDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SolutionDetail'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolutionDetail'
+          description: ''
+    patch:
+      operationId: api_solutions_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Solution.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSolutionDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSolutionDetail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSolutionDetail'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolutionDetail'
+          description: ''
+    delete:
+      operationId: api_solutions_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Solution.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/solutions/my_solutions/:
+    get:
+      operationId: api_solutions_my_solutions_retrieve
+      description: Get current user's solutions
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolutionDetail'
+          description: ''
+  /api/solutions/statistics/:
+    get:
+      operationId: api_solutions_statistics_retrieve
+      description: Get user's solution statistics
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolutionDetail'
+          description: ''
+  /api/solutions/submit/:
+    post:
+      operationId: api_solutions_submit_create
+      description: Submit a solution for evaluation
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolutionSubmit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SolutionSubmit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SolutionSubmit'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolutionSubmit'
+          description: ''
+  /api/tags/:
+    get:
+      operationId: api_tags_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTagsList'
+          description: ''
+    post:
+      operationId: api_tags_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tags'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Tags'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Tags'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tags'
+          description: ''
+  /api/tags/{id}/:
+    get:
+      operationId: api_tags_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Tag.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tags'
+          description: ''
+    put:
+      operationId: api_tags_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Tag.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tags'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Tags'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Tags'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tags'
+          description: ''
+    patch:
+      operationId: api_tags_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Tag.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTags'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTags'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTags'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tags'
+          description: ''
+    delete:
+      operationId: api_tags_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Tag.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tags/{id}/problems/:
+    get:
+      operationId: api_tags_problems_retrieve
+      description: Get all problems with this tag
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Tag.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tags'
+          description: ''
+  /api/tags/popular/:
+    get:
+      operationId: api_tags_popular_retrieve
+      description: Get most used tags
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tags'
+          description: ''
+  /api/testcases/:
+    get:
+      operationId: api_testcases_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTestcaseList'
+          description: ''
+    post:
+      operationId: api_testcases_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Testcase'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Testcase'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Testcase'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Testcase'
+          description: ''
+  /api/testcases/{id}/:
+    get:
+      operationId: api_testcases_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Test Case.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Testcase'
+          description: ''
+    put:
+      operationId: api_testcases_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Test Case.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Testcase'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Testcase'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Testcase'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Testcase'
+          description: ''
+    patch:
+      operationId: api_testcases_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Test Case.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTestcase'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTestcase'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTestcase'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Testcase'
+          description: ''
+    delete:
+      operationId: api_testcases_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Test Case.
+        required: true
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /auth/login/:
+    post:
+      operationId: auth_login_create
+      description: Custom authentication endpoint that returns user data with token
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+          description: ''
+  /auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: User logout endpoint
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          description: No response body
+  /auth/register/:
+    post:
+      operationId: auth_register_create
+      description: User registration endpoint
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          description: No response body
+  /auth/users/:
+    get:
+      operationId: auth_users_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+    post:
+      operationId: auth_users_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegistration'
+          description: ''
+  /auth/users/{id}/:
+    get:
+      operationId: auth_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this User.
+        required: true
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this User.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this User.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this User.
+        required: true
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /auth/users/change_password/:
+    post:
+      operationId: auth_users_change_password_create
+      description: Change user password
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /auth/users/me/:
+    get:
+      operationId: auth_users_me_retrieve
+      description: Get current user's profile
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /auth/users/stats/:
+    get:
+      operationId: auth_users_stats_retrieve
+      description: Get user statistics
+      tags:
+      - auth
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /auth/users/update_profile/:
+    put:
+      operationId: auth_users_update_profile_update
+      description: Update current user's profile
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_update_profile_partial_update
+      description: Update current user's profile
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /engine/run/:
+    post:
+      operationId: engine_run_create
+      tags:
+      - engine
+      security:
+      - tokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    AuthToken:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        token:
+          type: string
+          readOnly: true
+      required:
+      - password
+      - token
+      - username
+    Codeblock:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        problem:
+          type: integer
+        block:
+          type: string
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Programming Language
+        language_display:
+          type: string
+          readOnly: true
+      required:
+      - block
+      - id
+      - language_display
+      - problem
+    DefaultLangEnum:
+      enum:
+      - CPP
+      - JAVA
+      - PYTHON
+      - JAVASCRIPT
+      - TYPESCRIPT
+      type: string
+      description: |-
+        * `CPP` - C++
+        * `JAVA` - Java
+        * `PYTHON` - Python
+        * `JAVASCRIPT` - JavaScript
+        * `TYPESCRIPT` - TypeScript
+    DifficultyEnum:
+      enum:
+      - EASY
+      - MEDIUM
+      - HARD
+      type: string
+      description: |-
+        * `EASY` - Easy
+        * `MEDIUM` - Medium
+        * `HARD` - Hard
+    DiscussDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        body:
+          type: string
+          description: Content of the post
+        author:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        problem:
+          type: integer
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tags'
+          readOnly: true
+        tag_ids:
+          type: array
+          items:
+            type: integer
+          writeOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author
+      - created_at
+      - id
+      - problem
+      - tags
+      - title
+      - user
+    DiscussList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        author:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        problem_id:
+          type: integer
+          readOnly: true
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tags'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - author
+      - created_at
+      - id
+      - problem_id
+      - tags
+      - title
+    LanguageEnum:
+      enum:
+      - CPP
+      - JAVA
+      - PYTHON
+      - JAVASCRIPT
+      - TYPESCRIPT
+      type: string
+      description: |-
+        * `CPP` - C++
+        * `JAVA` - Java
+        * `PYTHON` - Python
+        * `JAVASCRIPT` - JavaScript
+        * `TYPESCRIPT` - TypeScript
+    NullEnum:
+      enum:
+      - null
+    PaginatedCodeblockList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Codeblock'
+    PaginatedDiscussListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscussList'
+    PaginatedProblemListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemList'
+    PaginatedSolutionListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SolutionList'
+    PaginatedTagsList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tags'
+    PaginatedTestcaseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Testcase'
+    PaginatedUserList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedCodeblock:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        problem:
+          type: integer
+        block:
+          type: string
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Programming Language
+        language_display:
+          type: string
+          readOnly: true
+    PatchedDiscussDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        body:
+          type: string
+          description: Content of the post
+        author:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        problem:
+          type: integer
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tags'
+          readOnly: true
+        tag_ids:
+          type: array
+          items:
+            type: integer
+          writeOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedProblemDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          description: Title of the problem
+          maxLength: 255
+        problem_description:
+          type: string
+        difficulty:
+          allOf:
+          - $ref: '#/components/schemas/DifficultyEnum'
+          title: Difficulty Level
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tags'
+          readOnly: true
+        tag_ids:
+          type: array
+          items:
+            type: integer
+          writeOnly: true
+        codeblocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Codeblock'
+          readOnly: true
+        testcases:
+          type: array
+          items:
+            $ref: '#/components/schemas/TestcaseList'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        success_rate:
+          type: string
+          readOnly: true
+    PatchedSolutionDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        problem:
+          type: integer
+        code:
+          type: string
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Programming Language
+        language_display:
+          type: string
+          readOnly: true
+        status:
+          readOnly: true
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        status_display:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedTags:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tags:
+          type: string
+          maxLength: 255
+    PatchedTestcase:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        problem:
+          type: integer
+        input:
+          type: string
+        output:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        name:
+          type: string
+          nullable: true
+          maxLength: 255
+        default_lang:
+          allOf:
+          - $ref: '#/components/schemas/DefaultLangEnum'
+          title: Default Coding Language
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+    ProblemDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          description: Title of the problem
+          maxLength: 255
+        problem_description:
+          type: string
+        difficulty:
+          allOf:
+          - $ref: '#/components/schemas/DifficultyEnum'
+          title: Difficulty Level
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tags'
+          readOnly: true
+        tag_ids:
+          type: array
+          items:
+            type: integer
+          writeOnly: true
+        codeblocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Codeblock'
+          readOnly: true
+        testcases:
+          type: array
+          items:
+            $ref: '#/components/schemas/TestcaseList'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        success_rate:
+          type: string
+          readOnly: true
+      required:
+      - codeblocks
+      - created_at
+      - id
+      - success_rate
+      - tags
+      - testcases
+    ProblemList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          description: Title of the problem
+          maxLength: 255
+        problem_description:
+          type: string
+        difficulty:
+          allOf:
+          - $ref: '#/components/schemas/DifficultyEnum'
+          title: Difficulty Level
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tags'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        total_solutions:
+          type: string
+          readOnly: true
+        total_testcases:
+          type: string
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - tags
+      - total_solutions
+      - total_testcases
+    SolutionDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        problem:
+          type: integer
+        code:
+          type: string
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Programming Language
+        language_display:
+          type: string
+          readOnly: true
+        status:
+          readOnly: true
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        status_display:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - id
+      - language_display
+      - problem
+      - status
+      - status_display
+      - user
+    SolutionList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        problem_id:
+          type: integer
+          readOnly: true
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          title: Programming Language
+        language_display:
+          type: string
+          readOnly: true
+        status:
+          readOnly: true
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        status_display:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - language_display
+      - problem_id
+      - status
+      - status_display
+      - user
+    SolutionSubmit:
+      type: object
+      properties:
+        problem_id:
+          type: integer
+        code:
+          type: string
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          description: |-
+            Programming language. If not provided, uses user's default language.
+
+            * `CPP` - C++
+            * `JAVA` - Java
+            * `PYTHON` - Python
+            * `JAVASCRIPT` - JavaScript
+            * `TYPESCRIPT` - TypeScript
+      required:
+      - code
+      - problem_id
+    StatusEnum:
+      enum:
+      - INVALID_TESTCASE
+      - RUNTIME_ERROR
+      - COMPILE_ERROR
+      - WRONG_ANSWER
+      - SUCCESS
+      - TIME_LIMIT_EXCEEDED
+      - MEMORY_LIMIT_EXCEEDED
+      type: string
+      description: |-
+        * `INVALID_TESTCASE` - Invalid Testcase
+        * `RUNTIME_ERROR` - Runtime Error
+        * `COMPILE_ERROR` - Compile Error
+        * `WRONG_ANSWER` - Wrong Answer
+        * `SUCCESS` - Success
+        * `TIME_LIMIT_EXCEEDED` - Time Limit Exceeded
+        * `MEMORY_LIMIT_EXCEEDED` - Memory Limit Exceeded
+    Tags:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tags:
+          type: string
+          maxLength: 255
+      required:
+      - id
+      - tags
+    Testcase:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        problem:
+          type: integer
+        input:
+          type: string
+        output:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - problem
+    TestcaseList:
+      type: object
+      description: Serializer without testcase content for listing
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        name:
+          type: string
+          nullable: true
+          maxLength: 255
+        default_lang:
+          allOf:
+          - $ref: '#/components/schemas/DefaultLangEnum'
+          title: Default Coding Language
+        date_joined:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - date_joined
+      - id
+      - username
+    UserRegistration:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        name:
+          type: string
+          nullable: true
+          maxLength: 255
+        password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        password2:
+          type: string
+          writeOnly: true
+          minLength: 8
+        default_lang:
+          allOf:
+          - $ref: '#/components/schemas/DefaultLangEnum'
+          title: Default Coding Language
+      required:
+      - password
+      - password2
+      - username
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"
