@@ -59,7 +59,7 @@ class TestcaseListSerializer(serializers.ModelSerializer):
     """Serializer without testcase content for listing"""
     class Meta:
         model = Testcase
-        fields = ['id', 'created_at']
+        fields = ['id','input', 'output', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 

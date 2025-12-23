@@ -1,18 +1,9 @@
-// components/ProblemTable.tsx
 import Link from 'next/link';
 import Pagination from './pagination';
 import useSWR from 'swr';
 import { BASE_URL } from '@/lib/constants';
 import { LoaderSmall } from './loader';
-
-interface Problem {
-    id: number;
-    name: string;
-    //   status?: 'solved' | 'attempted';
-    //   hasSolution: boolean;
-    //   acceptance: string;
-    difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-}
+import { Problem } from '@/lib/models';
 
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
@@ -82,7 +73,7 @@ function ProblemRow({ problem, index }: { problem: Problem; index: number }) {
                 </Link>
             </td>
             <td className="px-6 py-4">
-                <span className={`font-medium ${difficultyColors[problem.difficulty]}`}>
+                <span className={`font-medium ${difficultyColors[problem.difficulty ?? 'EASY']}`}>
                     {problem.difficulty}
                 </span>
             </td>
