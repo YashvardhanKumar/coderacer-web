@@ -36,46 +36,10 @@ services:
     tty: true
     depends_on:
       - cdb
-      - redis
-      - cpp
-      - java
-      - typescript
-      - python
     volumes:
       - ./api:/home/coderacer/api/
       - /var/run/docker.sock:/var/run/docker.sock
 
-    networks:
-      - app-network
-  cpp:
-    build: 
-      context: ./api/runners/cpp
-    container_name: runner-cpp
-    tty: true
-    networks:
-      - app-network
-
-  java:
-    build: 
-      context: ./api/runners/java
-    container_name: runner-java
-    tty: true
-    networks:
-      - app-network
-
-  typescript:
-    build: 
-      context: ./api/runners/typescript
-    container_name: runner-node
-    tty: true
-    networks:
-      - app-network
-
-  python:
-    build: 
-      context: ./api/runners/python
-    container_name: runner-python
-    tty: true
     networks:
       - app-network
 
@@ -107,21 +71,6 @@ services:
       POSTGRES_DB: admin
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
-    networks:
-      - app-network
-  
-  redis:
-    image: redis/redis-stack-server:latest
-    container_name: redis-stack
-    ports:
-      - '6379:6379'
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
     networks:
       - app-network
 

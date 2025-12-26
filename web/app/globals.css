@@ -144,7 +144,7 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-  
+
 /* Custom Colors */
   --color-primary: #2b6cee;
   --color-background-light: #f6f6f8;
