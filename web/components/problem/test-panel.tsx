@@ -1,17 +1,15 @@
 // components/problem/TestPanel.tsx
 "use client";
 
+import { CODE_RUNNER_URL } from "@/lib/constants";
 import {
   Language,
   LanguageCodes,
   Problem,
-  Testcase,
   TestcaseList,
   User,
 } from "@/lib/models";
-import { log } from "console";
-import { validateHeaderValue } from "http";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 interface Props {
   problem: Problem;
@@ -28,7 +26,6 @@ export default function TestPanel({
 }: Props) {
   const [activeTab, setActiveTab] = useState("testcase");
   const [activeCase, setActiveCase] = useState(1);
-  const [variavles, setVariables] = useState<Record<string, string>>({});
 
   const testcases = problem.testcases;
 
@@ -65,7 +62,7 @@ export default function TestPanel({
       }
     });
 
-    xhr.open("POST", "http://10.98.182.37:2358/submissions?wait=true");
+    xhr.open("POST", `${CODE_RUNNER_URL}/submissions?wait=true`);
     xhr.setRequestHeader("Content-Type", "application/json");
 
     xhr.send(data);
