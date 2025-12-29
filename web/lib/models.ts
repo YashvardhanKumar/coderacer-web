@@ -37,6 +37,28 @@ export const LanguageDisplayNames: Record<Language, string> = {
   [Language.TYPESCRIPT]: 'TypeScript'
 };
 
+export interface RunCodePayload {
+  problem_id: number;
+  source_code: string;
+  language_id: number;
+  stdin?: string;
+  expected_output?: string;
+
+  number_of_runs?: number;
+
+  cpu_time_limit?: number;
+  cpu_extra_time?: number;
+  wall_time_limit?: number;
+  memory_limit?: number;
+  stack_limit?: number;
+  max_processes_and_or_threads?: number;
+  max_file_size?: number;
+
+  enable_per_process_and_thread_time_limit?: boolean;
+  enable_per_process_and_thread_memory_limit?: boolean;
+  enable_network?: boolean;
+}
+
 export enum Difficulty {
   EASY = 'EASY',
   MEDIUM = 'MEDIUM',
@@ -83,9 +105,12 @@ export interface Tag {
 export interface Codeblock {
   id: number;
   problem: number;
+  imports: string;
   block: string;
+  runner_code: string;
   language: Language;
   language_display: string;
+  full_code: string;
 }
 
 export interface Testcase {
@@ -93,6 +118,7 @@ export interface Testcase {
   problem: number;
   input: string;
   output: string;
+  display_testcase: boolean;
   created_at: string;
 }
 
@@ -100,6 +126,7 @@ export interface TestcaseList {
   id: number;
   input: string;
   output: string;
+  display_testcase: boolean;
   created_at: string;
 }
 
@@ -225,7 +252,9 @@ export interface DiscussionUpdateRequest {
 
 export interface CodeblockCreateRequest {
   problem: number;
+  imports: string;
   block: string;
+  runner_code: string;
   language: Language;
 }
 

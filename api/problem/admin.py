@@ -8,14 +8,14 @@ from .models import (
 class CodeblockInline(admin.TabularInline):
     model = Codeblock
     extra = 1
-    fields = ('block', 'language')
+    fields = ('imports','block', 'runner_code', 'language')
 
 
 class TestcaseInline(admin.TabularInline):
     model = Testcase
     extra = 1
     readonly_fields = ('id', 'created_at')
-    fields = ('input', 'output', 'created_at')
+    fields = ('input', 'output', 'display_testcase', 'created_at')
 
 
 class ProblemTagsInline(admin.TabularInline):
@@ -45,7 +45,7 @@ class ProblemAdmin(admin.ModelAdmin):
 class CodeblockAdmin(admin.ModelAdmin):
     list_display = ('id', 'problem', 'language', 'get_block_preview')
     list_filter = ('problem', 'language')
-    search_fields = ('problem__id', 'block')
+    search_fields = ('problem__id', 'imports', 'block', 'runner_code')
     readonly_fields = ('id',)
     raw_id_fields = ('problem',)
     
@@ -58,12 +58,12 @@ class CodeblockAdmin(admin.ModelAdmin):
 class TestcaseAdmin(admin.ModelAdmin):
     list_display = ('id', 'problem', 'created_at')
     list_filter = ('created_at', 'problem')
-    search_fields = ('problem__id', 'input', 'output')
+    search_fields = ('problem__id', 'input', 'output', 'display_testcase')
     readonly_fields = ('id', 'created_at')
     raw_id_fields = ('problem',)
     
     fieldsets = (
-        (None, {'fields': ('id', 'problem', 'input', 'output')}),
+        (None, {'fields': ('id', 'problem', 'input', 'output', 'display_testcase')}),
         ('Metadata', {'fields': ('created_at',)}),
     )
 

@@ -193,6 +193,10 @@
   .btn-secondary {
     @apply px-6 py-2 rounded bg-[#282e39] hover:bg-[#323844] text-white text-sm font-medium transition-colors border border-transparent hover:border-gray-600;
   }
+
+  p {
+    @apply py-1;
+  }
 }
 
 .material-symbols-outlined {

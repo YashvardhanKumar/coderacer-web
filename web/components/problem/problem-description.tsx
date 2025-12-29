@@ -86,16 +86,6 @@ function DescriptionContent({ problem }: Props) {
 
       {/* Problem Text */}
       <div className="text-sm text-gray-300 leading-relaxed space-y-4">
-        <p>
-          Given an array of integers <CodeBlock inline>nums</CodeBlock> and an integer{' '}
-          <CodeBlock inline>target</CodeBlock>, return indices of the two numbers such that they add up to{' '}
-          <CodeBlock inline>target</CodeBlock>.
-        </p>
-        <p>
-          You may assume that each input would have <strong>exactly one solution</strong>, and you may not use the same element twice.
-        </p>
-        <p>You can return the answer in any order.</p>
-
         <div dangerouslySetInnerHTML={{ __html: problem?.problem_description ?? '' }}></div>
 
         <div className="mt-12 border-t border-[#282e39] pt-6 flex flex-wrap gap-4">

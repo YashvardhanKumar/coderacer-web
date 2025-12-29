@@ -5,13 +5,21 @@ from ckeditor.fields import RichTextField
 
 
 class AnswerStatus(models.TextChoices):
-    INVALID_TESTCASE = 'INVALID_TESTCASE', 'Invalid Testcase'
-    RUNTIME_ERROR = 'RUNTIME_ERROR', 'Runtime Error'
-    COMPILE_ERROR = 'COMPILE_ERROR', 'Compile Error'
-    WRONG_ANSWER = 'WRONG_ANSWER', 'Wrong Answer'
-    SUCCESS = 'SUCCESS', 'Success'
-    TIME_LIMIT_EXCEEDED = 'TIME_LIMIT_EXCEEDED', 'Time Limit Exceeded'
-    MEMORY_LIMIT_EXCEEDED = 'MEMORY_LIMIT_EXCEEDED', 'Memory Limit Exceeded'
+    QUEUE     = "In Queue"
+    PROCESS   = "Processing"
+    AC        = "Accepted"
+    WA        = "Wrong Answer"
+    TLE       = "Time Limit Exceeded"
+    CE        = "Compilation Error"
+    SIGSEGV   = "Runtime Error (SIGSEGV)"
+    SIGXFSZ   = "Runtime Error (SIGXFSZ)"
+    SIGFPE    = "Runtime Error (SIGFPE)"
+    SIGABRT   = "Runtime Error (SIGABRT)"
+    NZEC      = "Runtime Error (NZEC)"
+    OTHER     = "Runtime Error (Other)"
+    BOXERR    = "Internal Error"
+    EXEERR    = "Exec Format Error"
+    INVTCL    = "Invalid Testcase"
 
 class Difficulty(models.TextChoices):
     EASY = 'EASY', 'Easy'
@@ -61,7 +69,9 @@ class Codeblock(models.Model):
         on_delete=models.CASCADE, 
         related_name='codeblocks'
     )
+    imports = models.TextField(blank=True, null=True)
     block = models.TextField()
+    runner_code = models.TextField(blank=True, null=True)
     language = models.CharField(
         max_length=20,
         choices=CodingLanguage.choices,
@@ -87,6 +97,7 @@ class Testcase(models.Model):
     )
     input = models.TextField(blank=True, null=False)
     output = models.TextField(blank=True, null=False)
+    display_testcase = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

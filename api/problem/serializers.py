@@ -41,17 +41,21 @@ class TagsSerializer(serializers.ModelSerializer):
 
 class CodeblockSerializer(serializers.ModelSerializer):
     language_display = serializers.CharField(source='get_language_display', read_only=True)
+    full_code = serializers.SerializerMethodField()
     
     class Meta:
         model = Codeblock
-        fields = ['id', 'problem', 'block', 'language', 'language_display']
+        fields = ['id', 'problem', 'imports', 'block', 'runner_code', 'language', 'language_display', 'full_code']
         read_only_fields = ['id']
+    
+    def get_full_code(self, obj):
+        return f"{obj.imports}\n\n{obj.block}\n\n{obj.runner_code}"
 
 
 class TestcaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Testcase
-        fields = ['id', 'problem', 'input', 'output', 'created_at']
+        fields = ['id', 'problem', 'input', 'output', 'display_testcase', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
@@ -59,7 +63,7 @@ class TestcaseListSerializer(serializers.ModelSerializer):
     """Serializer without testcase content for listing"""
     class Meta:
         model = Testcase
-        fields = ['id','input', 'output', 'created_at']
+        fields = ['id','input', 'output', 'display_testcase', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
@@ -67,6 +71,7 @@ class ProblemListSerializer(serializers.ModelSerializer):
     tags = TagsSerializer(many=True, read_only=True)
     total_solutions = serializers.SerializerMethodField()
     total_testcases = serializers.SerializerMethodField()
+    
 
     class Meta:
         model = Problem

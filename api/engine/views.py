@@ -1,82 +1,85 @@
-import os, uuid, subprocess, shutil
-from rest_framework.decorators import api_view
+# submissions/views.py
+from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
 
-BASE_DIR = "/tmp/code-engine"
+from .serializers import SubmissionSerializer
+from .services import submit_to_judge0
+from problem.models import Solution, AnswerStatus
+from django.utils.timezone import now
+from rest_framework import permissions # You can use this for clarity
 
-LANG_CONFIG = {
-    "cpp": {
-        "image": "runner-cpp",
-        "file": "main.cpp",
-        "cmd": "g++ main.cpp -O2 -o main && timeout 2s ./main"
-    },
-    "python": {
-        "image": "runner-python",
-        "file": "main.py",
-        "cmd": "timeout 2s python3 main.py"
-    },
-    "java": {
-        "image": "runner-java",
-        "file": "Main.java",
-        "cmd": "javac Main.java && timeout 2s java Main"
-    },
-    "javascript": {
-        "image": "runner-node",
-        "file": "main.js",
-        "cmd": "timeout 2s node main.js"
-    },
-    "typescript": {
-        "image": "runner-node",
-        "file": "main.ts",
-        "cmd": (
-            "tsc main.ts --target ES2020 --module commonjs "
-            "--outDir dist && timeout 2s node dist/main.js"
-        )
-    }
-}
+class RunCodeView(APIView):
+    """
+    Receives code execution request and proxies it to Judge0
+    """
+    authentication_classes = [] 
+    permission_classes = [permissions.AllowAny]
 
-@api_view(["POST"])
-def run_code(request):
-    language = request.data.get("language")
-    code = request.data.get("code")
+    def post(self, request):
+        serializer = SubmissionSerializer(data=request.data)
 
-    if language not in LANG_CONFIG:
-        return Response({"error": "Unsupported language"}, status=400)
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # validated = serializer.validated_data
+        
+        # submission = Solution.objects.create(
+        #     problem=validated.get('problem_id'),
+        #     user=request.user,
+        #     code=validated['source_code'],
+        #     language=validated['language_id'],
+        #     status=AnswerStatus.PENDING,
+        #     created_at=now()
+        # )
+        
+        try:
+            result = submit_to_judge0(serializer.validated_data, is_submit=False)
+            return Response(result, status=status.HTTP_200_OK)
 
-    job_id = str(uuid.uuid4())
-    job_dir = os.path.join(BASE_DIR, job_id)
-    os.makedirs(job_dir)
+        except Exception as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
 
-    cfg = LANG_CONFIG[language]
-    file_path = os.path.join(job_dir, cfg["file"])
-    with open(file_path, "w") as f:
-        f.write(code)
+class SubmitCodeView(APIView):
+    """
+    Receives code execution request and proxies it to Judge0
+    """
+    authentication_classes = [] 
+    permission_classes = [permissions.AllowAny]
 
-    docker_cmd = [
-        "docker", "run", "--rm",
-        "--cpus=1",
-        "--memory=128m",
-        "-v", f"{job_dir}:/app",
-        cfg["image"],
-        "bash", "-c", cfg["cmd"]
-    ]
+    def post(self, request):
+        serializer = SubmissionSerializer(data=request.data)
 
-    try:
-        result = subprocess.run(
-            docker_cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=3,
-            text=True
-        )
-        output = result.stdout
-        error = result.stderr
-    except subprocess.TimeoutExpired:
-        output, error = "", "Time Limit Exceeded"
-    finally:
-        shutil.rmtree(job_dir, ignore_errors=True)
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        validated = serializer.validated_data
+        
+        # submission = Solution.objects.create(
+        #     problem=validated.get('problem_id'),
+        #     user=request.user,
+        #     code=validated['source_code'],
+        #     language=validated['language_id'],
+        #     status=AnswerStatus.PENDING,
+        #     created_at=now()
+        # )
+        
+        try:
+            result = submit_to_judge0(serializer.validated_data, is_submit=True)
+            return Response(result, status=status.HTTP_200_OK)
+            
 
-    return Response({
-        "output": output,
-        "error": error
-    })
+        except Exception as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )

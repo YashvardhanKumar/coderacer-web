@@ -74,6 +74,17 @@ services:
     networks:
       - app-network
 
+  piston_api:
+    image: ghcr.io/engineer-man/piston
+    container_name: piston_api
+    restart: always
+    privileged: true
+    ports:
+      - 2000:2000
+    volumes:
+      - ./data/piston/packages:/piston/packages
+    tmpfs:
+      - /tmp:exec
 volumes:
   pg_data:
   redis_data:
