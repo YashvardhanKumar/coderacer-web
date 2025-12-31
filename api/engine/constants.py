@@ -40,6 +40,6 @@ def parse_output(output_str: str) -> str:
     value = json.loads(output_str.strip())
 
     if isinstance(value, list):
-        return " ".join(map(str, value))
+        return "\n".join(map(str, value))
 
     return value

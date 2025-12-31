@@ -55,7 +55,7 @@ class CodeblockSerializer(serializers.ModelSerializer):
 class TestcaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Testcase
-        fields = ['id', 'problem', 'input', 'output', 'display_testcase', 'created_at']
+        fields = ['id', 'problem', 'input', 'output', 'output_type', 'display_testcase', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 
@@ -63,7 +63,7 @@ class TestcaseListSerializer(serializers.ModelSerializer):
     """Serializer without testcase content for listing"""
     class Meta:
         model = Testcase
-        fields = ['id','input', 'output', 'display_testcase', 'created_at']
+        fields = ['id','input', 'output', 'output_type', 'display_testcase', 'created_at']
         read_only_fields = ['id', 'created_at']
 
 

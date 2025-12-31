@@ -75,6 +75,11 @@ export enum Status {
   MEMORY_LIMIT_EXCEEDED = 'MEMORY_LIMIT_EXCEEDED'
 }
 
+export enum DataType {
+  STRING = 'string',
+  INTEGER = 'integer'
+} 
+
 // ============================================================================
 // CORE MODEL INTERFACES
 // ============================================================================
@@ -118,6 +123,7 @@ export interface Testcase {
   problem: number;
   input: string;
   output: string;
+  output_type: DataType;
   display_testcase: boolean;
   created_at: string;
 }
@@ -126,6 +132,7 @@ export interface TestcaseList {
   id: number;
   input: string;
   output: string;
+  output_type: DataType;
   display_testcase: boolean;
   created_at: string;
 }

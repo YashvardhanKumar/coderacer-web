@@ -37,6 +37,101 @@
       for Problem #1"}}, {"added": {"name": "Test Case", "object": "Testcase #3 for
       Problem #1"}}, {"added": {"name": "Problem Tag", "object": "Problem #1 - Array"}},
       {"added": {"name": "Problem Tag", "object": "Problem #1 - Hash Table"}}]'
+- model: admin.logentry
+  pk: 4
+  fields:
+    action_time: 2025-12-30 12:05:44.888165+00:00
+    user: 1
+    content_type: 12
+    object_id: '1'
+    object_repr: 'Problem #1'
+    action_flag: 2
+    change_message: '[{"changed": {"fields": ["Problem description"]}}]'
+- model: admin.logentry
+  pk: 5
+  fields:
+    action_time: 2025-12-30 12:19:21.646511+00:00
+    user: 1
+    content_type: 12
+    object_id: '1'
+    object_repr: 'Problem #1'
+    action_flag: 2
+    change_message: '[{"changed": {"name": "Code Block", "object": "Codeblock for
+      Problem #1 (TypeScript)", "fields": ["Imports", "Block", "Runner code"]}}, {"changed":
+      {"name": "Code Block", "object": "Codeblock for Problem #1 (JavaScript)", "fields":
+      ["Imports", "Runner code"]}}, {"changed": {"name": "Code Block", "object": "Codeblock
+      for Problem #1 (Java)", "fields": ["Imports", "Block", "Runner code"]}}, {"changed":
+      {"name": "Code Block", "object": "Codeblock for Problem #1 (C++)", "fields":
+      ["Imports", "Block", "Runner code"]}}, {"changed": {"name": "Code Block", "object":
+      "Codeblock for Problem #1 (Python)", "fields": ["Imports", "Block", "Runner
+      code"]}}]'
+- model: admin.logentry
+  pk: 6
+  fields:
+    action_time: 2025-12-30 12:44:37.084061+00:00
+    user: 1
+    content_type: 12
+    object_id: '1'
+    object_repr: 'Problem #1'
+    action_flag: 2
+    change_message: '[{"changed": {"name": "Test Case", "object": "Testcase #1 for
+      Problem #1", "fields": ["Display testcase"]}}, {"changed": {"name": "Test Case",
+      "object": "Testcase #2 for Problem #1", "fields": ["Display testcase"]}}, {"changed":
+      {"name": "Test Case", "object": "Testcase #3 for Problem #1", "fields": ["Display
+      testcase"]}}]'
+- model: admin.logentry
+  pk: 7
+  fields:
+    action_time: 2025-12-30 14:12:39.952850+00:00
+    user: 1
+    content_type: 12
+    object_id: '1'
+    object_repr: 'Problem #1'
+    action_flag: 2
+    change_message: '[{"changed": {"name": "Code Block", "object": "Codeblock for
+      Problem #1 (JavaScript)", "fields": ["Block"]}}, {"changed": {"name": "Code
+      Block", "object": "Codeblock for Problem #1 (Java)", "fields": ["Runner code"]}},
+      {"changed": {"name": "Code Block", "object": "Codeblock for Problem #1 (C++)",
+      "fields": ["Runner code"]}}]'
+- model: admin.logentry
+  pk: 8
+  fields:
+    action_time: 2025-12-30 14:20:42.349407+00:00
+    user: 1
+    content_type: 12
+    object_id: '1'
+    object_repr: 'Problem #1'
+    action_flag: 2
+    change_message: '[{"changed": {"name": "Code Block", "object": "Codeblock for
+      Problem #1 (TypeScript)", "fields": ["Runner code"]}}, {"changed": {"name":
+      "Code Block", "object": "Codeblock for Problem #1 (JavaScript)", "fields": ["Runner
+      code"]}}, {"changed": {"name": "Code Block", "object": "Codeblock for Problem
+      #1 (Java)", "fields": ["Runner code"]}}, {"changed": {"name": "Code Block",
+      "object": "Codeblock for Problem #1 (C++)", "fields": ["Runner code"]}}, {"changed":
+      {"name": "Code Block", "object": "Codeblock for Problem #1 (Python)", "fields":
+      ["Runner code"]}}]'
+- model: admin.logentry
+  pk: 9
+  fields:
+    action_time: 2025-12-30 14:48:17.520178+00:00
+    user: 1
+    content_type: 12
+    object_id: '1'
+    object_repr: 'Problem #1'
+    action_flag: 2
+    change_message: '[{"changed": {"name": "Code Block", "object": "Codeblock for
+      Problem #1 (C++)", "fields": ["Runner code"]}}]'
+- model: admin.logentry
+  pk: 10
+  fields:
+    action_time: 2025-12-30 14:52:49.284558+00:00
+    user: 1
+    content_type: 12
+    object_id: '1'
+    object_repr: 'Problem #1'
+    action_flag: 2
+    change_message: '[{"changed": {"name": "Code Block", "object": "Codeblock for
+      Problem #1 (Python)", "fields": ["Runner code"]}}]'
 - model: auth.permission
   pk: 1
   fields:
@@ -541,105 +636,112 @@
   pk: 1
   fields:
     name: Two Sum
-    problem_description: "<p><span style=\"color:#262626\">Given an array of integers&nbsp;<code>nums</code>&nbsp;and
+    problem_description: "<p>Given an array of integers&nbsp;<code>nums</code>&nbsp;and
       an integer&nbsp;<code>target</code>, return&nbsp;<em>indices of the two numbers
-      such that they add up to&nbsp;<code>target</code></em>.</span></p>\r\n\r\n<p><span
-      style=\"color:#262626\">You may assume that each input would have&nbsp;<strong><em>exactly</em>&nbsp;one
-      solution</strong>, and you may not use the&nbsp;<em>same</em>&nbsp;element twice.</span></p>\r\n\r\n<p><span
-      style=\"color:#262626\">You can return the answer in any order.</span></p>\r\n\r\n<p><span
-      style=\"color:#262626\">&nbsp;</span></p>\r\n\r\n<p><span style=\"color:#262626\"><strong>Example
-      1:</strong></span></p>\r\n\r\n<pre>\r\n<span style=\"color:rgba(0, 0, 0, 0.55)\"><strong>Input:</strong>
-      nums = [2,7,11,15], target = 9\r\n<strong>Output:</strong> [0,1]\r\n<strong>Explanation:</strong>
-      Because nums[0] + nums[1] == 9, we return [0, 1].\r\n</span></pre>\r\n\r\n<p><span
-      style=\"color:#262626\"><strong>Example 2:</strong></span></p>\r\n\r\n<pre>\r\n<span
-      style=\"color:rgba(0, 0, 0, 0.55)\"><strong>Input:</strong> nums = [3,2,4],
-      target = 6\r\n<strong>Output:</strong> [1,2]\r\n</span></pre>\r\n\r\n<p><span
-      style=\"color:#262626\"><strong>Example 3:</strong></span></p>\r\n\r\n<pre>\r\n<span
-      style=\"color:rgba(0, 0, 0, 0.55)\"><strong>Input:</strong> nums = [3,3], target
-      = 6\r\n<strong>Output:</strong> [0,1]\r\n</span></pre>\r\n\r\n<p><span style=\"color:#262626\">&nbsp;</span></p>\r\n\r\n<p><span
-      style=\"color:#262626\"><strong>Constraints:</strong></span></p>\r\n\r\n<ul
+      such that they add up to&nbsp;<code>target</code></em>.</p>\r\n\r\n<p>You may
+      assume that each input would have&nbsp;<strong><em>exactly</em>&nbsp;one solution</strong>,
+      and you may not use the&nbsp;<em>same</em>&nbsp;element twice.</p>\r\n\r\n<p>You
+      can return the answer in any order.</p>\r\n\r\n<p>&nbsp;</p>\r\n\r\n<p><strong>Example
+      1:</strong></p>\r\n\r\n<pre>\r\n<strong>Input:</strong> nums = [2,7,11,15],
+      target = 9\r\n<strong>Output:</strong> [0,1]\r\n<strong>Explanation:</strong>
+      Because nums[0] + nums[1] == 9, we return [0, 1].\r\n</pre>\r\n\r\n<p><strong>Example
+      2:</strong></p>\r\n\r\n<pre>\r\n<strong>Input:</strong> nums = [3,2,4], target
+      = 6\r\n<strong>Output:</strong> [1,2]\r\n</pre>\r\n\r\n<p><strong>Example 3:</strong></p>\r\n\r\n<pre>\r\n<strong>Input:</strong>
+      nums = [3,3], target = 6\r\n<strong>Output:</strong> [0,1]\r\n</pre>\r\n\r\n<p>&nbsp;</p>\r\n\r\n<p><strong>Constraints:</strong></p>\r\n\r\n<ul
       style=\"margin-left:16px; margin-right:16px\">\r\n\t<li><code>2 &lt;= nums.length
       &lt;= 104</code></li>\r\n\t<li><code>-109 &lt;= nums[i] &lt;= 109</code></li>\r\n\t<li><code>-109
-      &lt;= target &lt;= 109</code></li>\r\n\t<li><strong>Only one valid answer exists.</strong></li>\r\n</ul>\r\n\r\n<p><span
-      style=\"color:#262626\">&nbsp;</span></p>\r\n\r\n<p><strong>Follow-up:&nbsp;</strong><span
-      style=\"color:#262626\">Can you come up with an algorithm that is less than&nbsp;</span><code>O(n2)</code>&nbsp;<span
-      style=\"color:#262626\">time complexity?</span></p>"
+      &lt;= target &lt;= 109</code></li>\r\n\t<li><strong>Only one valid answer exists.</strong></li>\r\n</ul>\r\n\r\n<p>&nbsp;</p>\r\n\r\n<p><strong>Follow-up:&nbsp;</strong>Can
+      you come up with an algorithm that is less than&nbsp;<code>O(n2)</code>&nbsp;time
+      complexity?</p>"
     created_at: 2025-12-26 12:19:52.698840+00:00
     difficulty: EASY
 - model: problem.codeblock
   pk: 1
   fields:
     problem: 1
+    imports: import * as readline from 'readline';
     block: "class Solution {\r\n    twoSum(nums: number[], target: number): number[]
       {\r\n        const map = new Map<number, number>();\r\n        for (let i =
       0; i < nums.length; i++) {\r\n            const complement = target - nums[i];\r\n
       \           if (map.has(complement)) {\r\n                return [map.get(complement)!,
       i];\r\n            }\r\n            map.set(nums[i], i);\r\n        }\r\n        return
-      [];\r\n    }\r\n}\r\n\r\nconst numsArr = [3, 2, 4];\r\nconst targetVal = 6;\r\n\r\nconst
-      solution = new Solution();\r\nconsole.log(solution.twoSum(numsArr, targetVal));"
+      [];\r\n    }\r\n}"
+    runner_code: "const rl = readline.createInterface({\r\n    input: process.stdin,\r\n
+      \   output: process.stdout\r\n});\r\n\r\nrl.question('', (input1) => {\r\n    rl.question('',
+      (input2) => {\r\n        // Parse input: expected format \"[3,2,4]\" and \"6\"\r\n
+      \       const numsArr = JSON.parse(input1);\r\n        const targetVal = parseInt(input2);\r\n\r\n
+      \       const solution = new Solution();\r\n        console.log(solution.twoSum(numsArr,
+      targetVal).join('\\n'));\r\n\r\n        rl.close();\r\n    });\r\n});"
     language: TYPESCRIPT
 - model: problem.codeblock
   pk: 2
   fields:
     problem: 1
+    imports: import * as readline from 'readline';
     block: "class Solution {\r\n    twoSum(nums, target) {\r\n        let map = new
       Map();\r\n        for (let i = 0; i < nums.length; i++) {\r\n            let
       complement = target - nums[i];\r\n            if (map.has(complement)) {\r\n
       \               return [map.get(complement), i];\r\n            }\r\n            map.set(nums[i],
-      i);\r\n        }\r\n    }\r\n}\r\n\r\n// Boilerplate for local testing\r\nconst
-      nums = [2, 7, 11, 15];\r\nconst target = 9;\r\n\r\nconst sol = new Solution();\r\nconsole.log(sol.twoSum(nums,
-      target));"
+      i);\r\n        }\r\n    }\r\n}"
+    runner_code: "const rl = readline.createInterface({\r\n  input: process.stdin,\r\n
+      \ output: process.stdout,\r\n  terminal: false\r\n});\r\n\r\nrl.on('line', (line:
+      string) => {\r\n  const numsArr: number[] = line.split(' ').map(Number);\r\n
+      \ rl.once('line', (line2: string) => {\r\n    const targetVal: number = Number(line2);\r\n
+      \   const solution = new Solution();\r\n    console.log(solution.twoSum(numsArr,
+      targetVal).join('\\n'));\r\n    process.exit();\r\n  });\r\n});"
     language: JAVASCRIPT
 - model: problem.codeblock
   pk: 3
   fields:
     problem: 1
-    block: "import java.util.*;\r\n\r\nclass Solution {\r\n    public int[] twoSum(int[]
-      nums, int target) {\r\n        Map<Integer, Integer> map = new HashMap<>();\r\n
-      \       for (int i = 0; i < nums.length; i++) {\r\n            int complement
-      = target - nums[i];\r\n            if (map.containsKey(complement)) {\r\n                return
-      new int[] { map.get(complement), i };\r\n            }\r\n            map.put(nums[i],
-      i);\r\n        }\r\n        return new int[] {};\r\n    }\r\n}\r\n\r\npublic
-      class Main {\r\n    public static void main(String[] args) {\r\n        Scanner
-      sc = new Scanner(System.in);\r\n        System.out.print(\"Enter array size:
-      \");\r\n        int n = sc.nextInt();\r\n        int[] nums = new int[n];\r\n
-      \       System.out.print(\"Enter elements: \");\r\n        for (int i = 0; i
-      < n; i++) nums[i] = sc.nextInt();\r\n        System.out.print(\"Enter target:
-      \");\r\n        int target = sc.nextInt();\r\n\r\n        Solution sol = new
-      Solution();\r\n        int[] result = sol.twoSum(nums, target);\r\n        System.out.println(Arrays.toString(result));\r\n
+    imports: import java.util.*;
+    block: "class Solution {\r\n    public int[] twoSum(int[] nums, int target) {\r\n
+      \       Map<Integer, Integer> map = new HashMap<>();\r\n        for (int i =
+      0; i < nums.length; i++) {\r\n            int complement = target - nums[i];\r\n
+      \           if (map.containsKey(complement)) {\r\n                return new
+      int[] { map.get(complement), i };\r\n            }\r\n            map.put(nums[i],
+      i);\r\n        }\r\n        return new int[] {};\r\n    }\r\n}"
+    runner_code: "public class Main {\r\n    public static void main(String[] args)
+      {\r\n        Scanner sc = new Scanner(System.in);\r\n        int n = sc.nextInt();\r\n
+      \       int[] nums = new int[n];\r\n        for (int i = 0; i < n; i++) nums[i]
+      = sc.nextInt();\r\n        int target = sc.nextInt();\r\n\r\n        Solution
+      sol = new Solution();\r\n        int[] result = sol.twoSum(nums, target);\r\n
+      \       for (int i = 0; i < result.length; i++) System.out.println(result[i]);\r\n
       \   }\r\n}"
     language: JAVA
 - model: problem.codeblock
   pk: 4
   fields:
     problem: 1
-    block: "#include <iostream>\r\n#include <vector>\r\n#include <unordered_map>\r\n\r\nusing
-      namespace std;\r\n\r\nclass Solution {\r\npublic:\r\n    vector<int> twoSum(vector<int>&
-      nums, int target) {\r\n        unordered_map<int, int> map;\r\n        for (int
-      i = 0; i < nums.size(); i++) {\r\n            int complement = target - nums[i];\r\n
+    imports: "#include <iostream>\r\n#include <vector>\r\n#include <unordered_map>\r\n\r\nusing
+      namespace std;"
+    block: "class Solution {\r\npublic:\r\n    vector<int> twoSum(vector<int>& nums,
+      int target) {\r\n        unordered_map<int, int> map;\r\n        for (int i
+      = 0; i < nums.size(); i++) {\r\n            int complement = target - nums[i];\r\n
       \           if (map.find(complement) != map.end()) {\r\n                return
       {map[complement], i};\r\n            }\r\n            map[nums[i]] = i;\r\n
-      \       }\r\n        return {};\r\n    }\r\n};\r\n\r\nint main() {\r\n    int
-      n, target;\r\n    cout << \"Enter number of elements: \";\r\n    cin >> n;\r\n
-      \   vector<int> nums(n);\r\n    cout << \"Enter elements: \";\r\n    for (int
-      i = 0; i < n; i++) cin >> nums[i];\r\n    cout << \"Enter target: \";\r\n    cin
-      >> target;\r\n\r\n    Solution sol;\r\n    vector<int> result = sol.twoSum(nums,
-      target);\r\n\r\n    if (!result.empty()) {\r\n        cout << \"[\" << result[0]
-      << \", \" << result[1] << \"]\" << endl;\r\n    }\r\n    return 0;\r\n}"
+      \       }\r\n        return {};\r\n    }\r\n};"
+    runner_code: "int main() {\r\n    int n, target;\r\n    cin >> n;\r\n    vector<int>
+      nums(n);\r\n    for (int i = 0; i < n; i++) cin >> nums[i];\r\n    cin >> target;\r\n\r\n
+      \   Solution sol;\r\n    vector<int> result = sol.twoSum(nums, target);\r\n\r\n
+      \   for(int i = 0; i < result.size(); i++)\r\n        cout << result[i] << endl;\r\n
+      \   \r\n    return 0;\r\n}"
     language: CPP
 - model: problem.codeblock
   pk: 5
   fields:
     problem: 1
-    block: "import sys\r\n\r\n# --- User's Code Starts Here ---\r\nclass Solution:\r\n
-      \   def twoSum(self, nums: list[int], target: int) -> list[int]:\r\n        #
-      User implementation goes here\r\n        pass\r\n# --- User's Code Ends Here
-      ---\r\n\r\ndef main():\r\n    # Read all input lines\r\n    input_data = sys.stdin.read().splitlines()\r\n
+    imports: import sys
+    block: "# --- User's Code Starts Here ---\r\nclass Solution:\r\n    def twoSum(self,
+      nums: list[int], target: int) -> list[int]:\r\n        # User implementation
+      goes here\r\n        pass\r\n# --- User's Code Ends Here ---"
+    runner_code: "def main():\r\n    # Read all input lines\r\n    input_data = sys.stdin.read().splitlines()\r\n
       \   if not input_data:\r\n        return\r\n\r\n    # Assuming line 1: space
       separated nums, line 2: target\r\n    nums = list(map(int, input_data[0].split()))\r\n
       \   target = int(input_data[1])\r\n\r\n    sol = Solution()\r\n    result =
-      sol.twoSum(nums, target)\r\n    \r\n    # Standardized list output\r\n    print(result)\r\n\r\nif
-      __name__ == \"__main__\":\r\n    main()"
+      sol.twoSum(nums, target)\r\n    \r\n    # Standardized list output\r\n    if
+      isinstance(value, list):\r\n        print('\\n'.join(map(str, result)))\r\n
+      \   else:\r\n        print(result)\r\n\r\nif __name__ == \"__main__\":\r\n    main()"
     language: PYTHON
 - model: problem.testcase
   pk: 1
@@ -647,6 +749,8 @@
     problem: 1
     input: "nums = [2,7,11,15]\r\ntarget = 9"
     output: '[0,1]'
+    output_type: integer
+    display_testcase: true
     created_at: 2025-12-26 12:19:52.710009+00:00
 - model: problem.testcase
   pk: 2
@@ -654,6 +758,8 @@
     problem: 1
     input: "nums = [3,2,4]\r\ntarget = 6"
     output: '[1,2]'
+    output_type: integer
+    display_testcase: true
     created_at: 2025-12-26 12:19:52.712399+00:00
 - model: problem.testcase
   pk: 3
@@ -661,6 +767,8 @@
     problem: 1
     input: "nums = [3,3]\r\ntarget = 6"
     output: '[0,1]'
+    output_type: integer
+    display_testcase: true
     created_at: 2025-12-26 12:19:52.713445+00:00
 - model: problem.problemtags
   pk: 1

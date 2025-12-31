@@ -3,6 +3,7 @@
 
 import { CODE_RUNNER_URL } from "@/lib/constants";
 import {
+  DataType,
   Language,
   LanguageCodes,
   Problem,
@@ -28,16 +29,30 @@ export default function TestPanel({
   code,
 }: Props) {
   const [activeTab, setActiveTab] = useState("testcase");
-  const [activeCase, setActiveCase] = useState(1);
+  const [activeCase, setActiveCase] = useState(0);
   const [runData, setRunData] = useState<any>();
+  const [responseData, setResponseData] = useState<any>();
 
-  const testcases = problem.testcases.filter(e => e.display_testcase == true);
+  const testcases = problem.testcases.filter((e) => e.display_testcase == true);
 
   const runCode = async () => {
+    const codeblock = problem.codeblocks.filter(
+      (e) => e.language === language
+    )[0];
 
-    const response = await apiClient.post<any, AxiosResponse<any, any, {}>, RunCodePayload>("/engine/run/", {
+    code =
+      codeblock.imports +
+      "\n\n" +
+      (code ?? codeblock.block) +
+      "\n\n" +
+      codeblock.runner_code;
+    const response = await apiClient.post<
+      any,
+      AxiosResponse<any, any, {}>,
+      RunCodePayload
+    >("/engine/run/", {
       problem_id: problem.id,
-      source_code: code ?? '',
+      source_code: code ?? "",
       language_id: LanguageCodes[language],
       number_of_runs: 1,
       enable_per_process_and_thread_time_limit: true,
@@ -46,10 +61,18 @@ export default function TestPanel({
     });
     setRunData(response.data);
     console.log(response.data);
-    
+
     // WARNING: For POST requests, body is set to null by browsers.
-    console.log("Run Code Response:", response.data);
+    if (Array.isArray(response.data)) {
+      setResponseData(response.data);
+      console.table(response.data);
+      setActiveTab("result");
+    }
   };
+
+  const opTobfyarr = ( output_type: DataType, output?: string) => {
+    return output?.trim().split("\n").map((line) => output_type === DataType.STRING ? line.trim() : parseInt(line.trim())).toString();
+  }
 
   return (
     <div className="h-full border-t border-[#282e39] bg-[#1a1a1a] flex flex-col shrink-0">
@@ -57,10 +80,11 @@ export default function TestPanel({
       <div className="flex items-center px-4 py-2 gap-4">
         <button
           onClick={() => setActiveTab("testcase")}
-          className={`flex items-center gap-2 text-xs font-bold border-b-2 pb-2 transition-colors ${activeTab === "testcase"
-            ? "text-white border-primary"
-            : "text-gray-500 hover:text-white border-transparent"
-            }`}
+          className={`flex items-center gap-2 text-xs font-bold border-b-2 pb-2 transition-colors ${
+            activeTab === "testcase"
+              ? "text-white border-primary"
+              : "text-gray-500 hover:text-white border-transparent"
+          }`}
         >
           <span className="material-symbols-outlined text-[16px] text-green-500">
             check_circle
@@ -69,10 +93,11 @@ export default function TestPanel({
         </button>
         <button
           onClick={() => setActiveTab("result")}
-          className={`flex items-center gap-2 text-xs font-bold border-b-2 pb-2 transition-colors ${activeTab === "result"
-            ? "text-white border-primary"
-            : "text-gray-500 hover:text-white border-transparent"
-            }`}
+          className={`flex items-center gap-2 text-xs font-bold border-b-2 pb-2 transition-colors ${
+            activeTab === "result"
+              ? "text-white border-primary"
+              : "text-gray-500 hover:text-white border-transparent"
+          }`}
         >
           Test Result
         </button>
@@ -86,10 +111,11 @@ export default function TestPanel({
               {testcases.map((_, index) => (
                 <button
                   onClick={() => setActiveCase(index)}
-                  className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${activeCase === index
-                    ? "bg-[#282e39] text-white"
-                    : "text-gray-400 hover:text-white hover:bg-[#282e39]"
-                    }`}
+                  className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    activeCase === index
+                      ? "bg-[#282e39] text-white"
+                      : "text-gray-400 hover:text-white hover:bg-[#282e39]"
+                  }`}
                 >
                   Case {index + 1}
                 </button>
@@ -103,43 +129,10 @@ export default function TestPanel({
             </div>
 
             <div className="space-y-3 font-mono text-xs">
-              {testcases[activeCase].input
-                .replaceAll("\r\n", "\n")
-                .split("\n")
-                .map((line) => {
-                  const [key, value] = line.split("=", 2);
-                  return (
-                    <div>
-                      <p className="text-gray-400 mb-1">{key} = </p>
-                      <div className="bg-[#282e39] p-2 rounded text-white border border-gray-700">
-                        {value}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </>
-        )}
-        {activeTab === "result" && (
-          <div className="text-gray-400 text-sm">
-            {runData ? <>
-              <div>{runData[0].status.description}</div>
-              <div className="flex gap-2 mb-4 mt-2">
-                {testcases.map((_, index) => (
-                  <button
-                    onClick={() => setActiveCase(index)}
-                    className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${activeCase === index
-                      ? "bg-[#282e39] text-white"
-                      : "text-gray-400 hover:text-white hover:bg-[#282e39]"
-                      }`}
-                  >
-                    Case {index + 1}
-                  </button>
-                ))}
-              </div>
-              <div className="space-y-3 font-mono text-xs">
-                {testcases[activeCase].input
-                  .replaceAll("\r\n", "\n")
+              {testcases &&
+                testcases
+                  .at(activeCase)
+                  ?.input.replaceAll("\r\n", "\n")
                   .split("\n")
                   .map((line) => {
                     const [key, value] = line.split("=", 2);
@@ -152,8 +145,63 @@ export default function TestPanel({
                       </div>
                     );
                   })}
+            </div>
+          </>
+        )}
+        {activeTab === "result" && (
+          <div className="text-gray-400 text-sm">
+            {runData ? (
+              <div className="space-y-3 pb-3">
+                <div>{runData[activeCase].status.description}</div>
+                <div className="flex gap-2 mb-4 mt-2">
+                  {testcases.map((_, index) => (
+                    <button
+                      onClick={() => setActiveCase(index)}
+                      className={`px-4 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        activeCase === index
+                          ? "bg-[#282e39] text-white"
+                          : "text-gray-400 hover:text-white hover:bg-[#282e39]"
+                      }`}
+                    >
+                      Case {index + 1}
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-3 font-mono text-xs">
+                  <p className="text-gray-400 mb-1">Input</p>
+                  {testcases[activeCase].input
+                    .replaceAll("\r\n", "\n")
+                    .split("\n")
+                    .map((line) => {
+                      const [key, value] = line.split("=", 2);
+                      return (
+                        <div className="bg-[#282e39] p-2 rounded text-white border border-gray-700">
+                          <p className="text-gray-400 mb-1">{key} = </p>
+                          <div>{value}</div>
+                        </div>
+                      );
+                    })}
+                </div>
+                <div className="space-y-3 font-mono text-xs">
+                  <p className="text-gray-400 mb-1">Output</p>
+                  {Array.isArray(responseData) && (
+                    <div className="bg-[#282e39] p-2 rounded text-white border border-gray-700">
+                      <div>[{opTobfyarr(testcases[activeCase].output_type, responseData[activeCase]?.stdout)}]</div>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3 font-mono text-xs">
+                  <p className="text-gray-400 mb-1">Expected Output</p>
+                  {Array.isArray(responseData) && (
+                    <div className="bg-[#282e39] p-2 rounded text-white border border-gray-700">
+                      <div>[{opTobfyarr(testcases[activeCase].output_type, responseData[activeCase]?.expected_output)}]</div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </> : <div>Run code first to show</div>}
+            ) : (
+              <div>Run code first to show</div>
+            )}
           </div>
         )}
       </div>

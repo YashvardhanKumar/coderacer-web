@@ -15,7 +15,7 @@ class TestcaseInline(admin.TabularInline):
     model = Testcase
     extra = 1
     readonly_fields = ('id', 'created_at')
-    fields = ('input', 'output', 'display_testcase', 'created_at')
+    fields = ('input', 'output', 'output_type', 'display_testcase', 'created_at')
 
 
 class ProblemTagsInline(admin.TabularInline):

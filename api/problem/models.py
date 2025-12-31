@@ -26,6 +26,10 @@ class Difficulty(models.TextChoices):
     MEDIUM = 'MEDIUM', 'Medium'
     HARD = 'HARD', 'Hard'
 
+class DataType(models.TextChoices):
+    STRING = 'string'
+    INTEGER = 'integer'
+
 class Tags(models.Model):
     id = models.BigAutoField(primary_key=True)
     tags = models.CharField(max_length=255, unique=True)
@@ -97,6 +101,12 @@ class Testcase(models.Model):
     )
     input = models.TextField(blank=True, null=False)
     output = models.TextField(blank=True, null=False)
+    output_type = models.CharField(
+        max_length=10,
+        choices=DataType.choices,
+        default=DataType.INTEGER,
+        verbose_name="Output Data Type"
+    )
     display_testcase = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
