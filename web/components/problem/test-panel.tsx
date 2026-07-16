@@ -342,10 +342,17 @@ export default function TestPanel({
                 key={activeCase}
                 className="space-y-3 pb-3 animate-in fade-in duration-200"
               >
-                <div
-                  className={`font-bold ${runData[activeCase]?.status?.id === 3 ? 'text-green-500' : 'text-red-500'}`}
-                >
-                  {runData[activeCase]?.status?.description}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`font-bold ${runData[activeCase]?.status?.id === 3 ? 'text-green-500' : 'text-red-500'}`}
+                  >
+                    {runData[activeCase]?.status?.description}
+                  </div>
+                  {runData[activeCase]?.user_time_ms !== undefined && (
+                    <span className="text-xs font-mono text-gray-400">
+                      · {Math.round(runData[activeCase].user_time_ms)} ms
+                    </span>
+                  )}
                 </div>
                 <div className="flex gap-2 mb-4 mt-2">
                   {sampleTestcases.map((_, index) => (

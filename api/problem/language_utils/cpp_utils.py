@@ -125,6 +125,7 @@ def _generate_cpp_multi_runner(
         f"{_2}vector<string> outputs;\n"
         f"{_2}{class_name}* obj = nullptr;\n"
         f'{_2}cout << "_USER_PRINT_START_" << endl;\n'
+        f"{_2}long long _total_t_ns = 0;\n"
         f"{_2}for(int i=0; i<num_cmds; i++) {{\n"
         f"{_3}string cmd = commands[i];\n"
         f"{_3}int arg_len; cin >> arg_len;\n"
@@ -164,6 +165,7 @@ def _generate_cpp_multi_runner(
             continue
         inputs = list(method.parameters.all().order_by("id"))
         runner_code += f'{_3}else if (cmd == "{method.name}") {{\n'
+        runner_code += f"{_4}auto _ts = chrono::high_resolution_clock::now();\n"
         for v in inputs:
             if v.type == VariableType.ARRAY:
                 runner_code += (
@@ -182,6 +184,8 @@ def _generate_cpp_multi_runner(
         if method.type != "void" and method.type != "VOID":
             runner_code += (
                 f"{_4}auto res = {call};\n"
+                f"{_4}auto _te = chrono::high_resolution_clock::now();\n"
+                f"{_4}_total_t_ns += chrono::duration_cast<chrono::nanoseconds>(_te - _ts).count();\n"
                 f"{_4}stringstream ss;\n"
                 f"{_4}auto old_buf = cout.rdbuf(ss.rdbuf());\n"
             )
@@ -199,12 +203,19 @@ def _generate_cpp_multi_runner(
                 f"{_4}cout.rdbuf(old_buf);\n" f"{_4}outputs.push_back(ss.str());\n"
             )
         else:
-            runner_code += f"{_4}{call};\n" f'{_4}outputs.push_back("null");\n'
+            runner_code += (
+                f"{_4}{call};\n"
+                f"{_4}auto _te = chrono::high_resolution_clock::now();\n"
+                f"{_4}_total_t_ns += chrono::duration_cast<chrono::nanoseconds>(_te - _ts).count();\n"
+                f'{_4}outputs.push_back("null");\n'
+            )
         runner_code += f"{_3}}}\n"
 
     runner_code += (
         f"{_2}}}\n"
         f'{_2}cout << "_USER_PRINT_END_" << endl;\n'
+        f"{_2}long long _tc_t_ns = _total_t_ns;\n"
+        f'{_2}cout << "_TIME_" << _tc_t_ns << "_" << endl;\n'
         f'{_2}cout << "[";\n'
         f"{_2}for(size_t i=0; i<outputs.size(); i++) {{\n"
         f'{_3}if (i > 0) cout << ",";\n'
@@ -289,14 +300,16 @@ def _generate_cpp_code(
                     runner_code += f"{_in}cin >> {v.name};\n"
 
         call = f"sol.{method.name}({', '.join([v.name for v in inputs])})"
-        runner_code += (
-            f"\n{_in}{class_name} sol;\n"
-            f'{_in}cout << "_USER_PRINT_START_" << endl;\n'
-        )
+        runner_code += f"\n{_in}{class_name} sol;\n"
         if method.type != "void" and method.type != "VOID" and ret_type != "void":
             runner_code += (
+                f'{_in}cout << "_USER_PRINT_START_" << endl;\n'
+                f"{_in}auto _t0 = chrono::high_resolution_clock::now();\n"
                 f"{_in}{ret_type} result = {call};\n"
+                f"{_in}auto _t1 = chrono::high_resolution_clock::now();\n"
+                f"{_in}auto _tc_t_ns = chrono::duration_cast<chrono::nanoseconds>(_t1 - _t0).count();\n"
                 f'{_in}cout << "_USER_PRINT_END_" << endl;\n'
+                f'{_in}cout << "_TIME_" << _tc_t_ns << "_" << endl;\n'
             )
             if has_custom_print(input_output_function, method.type, "CPP"):
                 runner_code += f"{_in}print(result);\n{_in}cout << endl;\n"
@@ -311,7 +324,13 @@ def _generate_cpp_code(
                 runner_code += f"{_in}cout << endl;\n"
         else:
             runner_code += (
-                f"{_in}{call};\n" f'{_in}cout << "_USER_PRINT_END_" << endl;\n'
+                f'{_in}cout << "_USER_PRINT_START_" << endl;\n'
+                f"{_in}auto _t0 = chrono::high_resolution_clock::now();\n"
+                f"{_in}{call};\n"
+                f"{_in}auto _t1 = chrono::high_resolution_clock::now();\n"
+                f"{_in}auto _tc_t_ns = chrono::duration_cast<chrono::nanoseconds>(_t1 - _t0).count();\n"
+                f'{_in}cout << "_USER_PRINT_END_" << endl;\n'
+                f'{_in}cout << "_TIME_" << _tc_t_ns << "_" << endl;\n'
             )
         runner_code += (
             f'{_in}cout << "___CODERACER_TC_SEP___" << endl;\n'

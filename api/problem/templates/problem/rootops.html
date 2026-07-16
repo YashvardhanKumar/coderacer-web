@@ -1,23 +1,23 @@
 {% extends "problem/rootops_base.html" %}
 
 {% block rootops_content %}
-<div id="initial-content" style="padding: 40px; color: var(--text-color); font-family: sans-serif;">
-    <h1>Welcome to Root Ops</h1>
-    <p>Select an option from the sidebar to manage the CodeFlip platform.</p>
+<div id="initial-content" style="padding: 40px; color: #e0e0e0; font-family: sans-serif;">
+    <h1 style="color: #ffffff;">Welcome to Root Ops</h1>
+    <p style="color: #aaaaaa;">Select an option from the sidebar to manage the CodeFlip platform.</p>
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-top: 40px;">
         <div style="background: #1e1e1e; padding: 25px; border-radius: 12px; border-top: 4px solid #79aec8; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-            <h3><i class="fas fa-plus-circle"></i> Quick Add</h3>
-            <p style="color: #888; font-size: 14px;">Create new coding challenges with rich descriptions and multi-language support.</p>
-            <a href="{% url 'add_problem_custom' %}" style="color: var(--link-color); text-decoration: none; font-weight: bold;">Go to New Problem →</a>
+            <h3 style="color: #ffffff; margin-top: 0;"><i class="fas fa-plus-circle"></i> Quick Add</h3>
+            <p style="color: #b0b0b0; font-size: 14px;">Create new coding challenges with rich descriptions and multi-language support.</p>
+            <a href="{% url 'add_problem_custom' %}" style="color: #79aec8; text-decoration: none; font-weight: bold;">Go to New Problem →</a>
         </div>
         <div style="background: #1e1e1e; padding: 25px; border-radius: 12px; border-top: 4px solid #f1c40f; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-            <h3><i class="fas fa-flask"></i> Testcases</h3>
-            <p style="color: #888; font-size: 14px;">Manage manual test cases or generate hundreds using AI power.</p>
+            <h3 style="color: #ffffff; margin-top: 0;"><i class="fas fa-flask"></i> Testcases</h3>
+            <p style="color: #b0b0b0; font-size: 14px;">Manage manual test cases or generate hundreds using AI power.</p>
             <a href="{% url 'add_testcase_custom' %}" style="color: #f1c40f; text-decoration: none; font-weight: bold;">Manage Testcases →</a>
         </div>
         <div style="background: #1e1e1e; padding: 25px; border-radius: 12px; border-top: 4px solid #c0392b; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-            <h3><i class="fas fa-shield-alt"></i> Security</h3>
-            <p style="color: #888; font-size: 14px;">Manage user permissions, staff access, and administrative groups.</p>
+            <h3 style="color: #ffffff; margin-top: 0;"><i class="fas fa-shield-alt"></i> Security</h3>
+            <p style="color: #b0b0b0; font-size: 14px;">Manage user permissions, staff access, and administrative groups.</p>
             <a href="{% url 'admin:user_user_changelist' %}" style="color: #e74c3c; text-decoration: none; font-weight: bold;">User Management →</a>
         </div>
     </div>

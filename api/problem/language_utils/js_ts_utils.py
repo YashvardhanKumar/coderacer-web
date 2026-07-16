@@ -110,6 +110,7 @@ def _generate_js_ts_multi_runner(lang_name, methods, class_name, constructor_met
         f"{_2}const outputs = [];\n"
         f"{_2}let obj = null;\n"
         f'{_2}console.log("_USER_PRINT_START_");\n'
+        f"{_2}let _total_t_ns = 0;\n"
         f"{_2}for(let i=0; i<commands.length; i++) {{\n"
         f"{_3}const cmd = commands[i];\n"
         f"{_3}const args = args_list[i];\n"
@@ -134,6 +135,7 @@ def _generate_js_ts_multi_runner(lang_name, methods, class_name, constructor_met
         if method.is_constructor:
             continue
         runner_code += f"{_3}else if (cmd === '{method.name}') {{\n"
+        runner_code += f"{_4}const _ts = process.hrtime.bigint();\n"
         if method.type != "void" and method.type != "VOID" and method.type:
             runner_code += (
                 f"{_4}const res = obj.{method.name}(...args);\n"
@@ -143,11 +145,15 @@ def _generate_js_ts_multi_runner(lang_name, methods, class_name, constructor_met
             runner_code += (
                 f"{_4}obj.{method.name}(...args);\n" f"{_4}outputs.push(null);\n"
             )
+        runner_code += f"{_4}const _te = process.hrtime.bigint();\n"
+        runner_code += f"{_4}_total_t_ns += Number(_te - _ts);\n"
         runner_code += f"{_3}}}\n"
 
     runner_code += (
         f"{_2}}}\n"
         f'{_2}console.log("_USER_PRINT_END_");\n'
+        f"{_2}const _tc_t_ns = _total_t_ns;\n"
+        f"{_2}console.log(`_TIME_${{_tc_t_ns}}_`);\n"
         f"{_2}console.log(JSON.stringify(outputs));\n"
         f'{_2}console.log("___CODERACER_TC_SEP___");\n'
         f"{T}}}\n"
@@ -248,21 +254,31 @@ def _generate_js_ts_code(
                 )
 
         call = f"solution.{method.name}({', '.join([v.name for v in inputs])})"
-        runner_code += (
-            f"{_2}const solution = new {class_name}();\n"
-            f'{_2}console.log("_USER_PRINT_START_");\n'
-        )
+        runner_code += f"{_2}const solution = new {class_name}();\n"
         if method.type != "void" and method.type != "VOID" and method.type:
             runner_code += (
+                f'{_2}console.log("_USER_PRINT_START_");\n'
+                f"{_2}const _t0 = process.hrtime.bigint();\n"
                 f"{_2}const result = {call};\n"
+                f"{_2}const _t1 = process.hrtime.bigint();\n"
+                f"{_2}const _tc_t_ns = Number(_t1 - _t0);\n"
                 f'{_2}console.log("_USER_PRINT_END_");\n'
+                f"{_2}console.log(`_TIME_${{_tc_t_ns}}_`);\n"
             )
             if has_custom_print(input_output_function, method.type, lang_name):
                 runner_code += f"{_2}print(result);\n"
             else:
                 runner_code += f"{_2}_print_res(result);\n"
         else:
-            runner_code += f"{_2}{call};\n" f'{_2}console.log("_USER_PRINT_END_");\n'
+            runner_code += (
+                f'{_2}console.log("_USER_PRINT_START_");\n'
+                f"{_2}const _t0 = process.hrtime.bigint();\n"
+                f"{_2}{call};\n"
+                f"{_2}const _t1 = process.hrtime.bigint();\n"
+                f"{_2}const _tc_t_ns = Number(_t1 - _t0);\n"
+                f'{_2}console.log("_USER_PRINT_END_");\n'
+                f"{_2}console.log(`_TIME_${{_tc_t_ns}}_`);\n"
+            )
         runner_code += (
             f'{_2}console.log("___CODERACER_TC_SEP___");\n' f"{T}}}\n" f"}}\n"
         )

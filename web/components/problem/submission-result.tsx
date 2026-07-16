@@ -55,20 +55,17 @@ export default function SubmissionResult({
     if (!solution || !solution.testcase_results) return null
 
     const results = solution.testcase_results as any[]
-    const totalTime = results.reduce(
-      (acc, curr) => acc + (parseFloat(curr.time) || 0),
-      0
-    )
     const maxMemory = results.reduce(
       (acc, curr) => Math.max(acc, parseFloat(curr.memory) || 0),
       0
     )
-
-    // Judge0 returns time in seconds for the entire batch run
-    const totalTimeMs = totalTime * 1000
+    const peakUserTime = results.reduce(
+      (acc, curr) => Math.max(acc, parseFloat(curr.user_time_ms) || 0),
+      0
+    )
     return {
-      time: totalTimeMs < 1 ? 0 : Math.round(totalTimeMs),
-      memory: (maxMemory / 1024).toFixed(2), // Assuming memory is in KB from Judge0
+      time: Math.round(peakUserTime),
+      memory: (maxMemory / 1024).toFixed(2),
     }
   }, [solution])
 
@@ -77,12 +74,11 @@ export default function SubmissionResult({
 
     return [...history].reverse().map((s, index) => {
       const results = (s.testcase_results as any[]) || []
-      const totalTime = results.reduce(
-        (acc, curr) => acc + (parseFloat(curr.time) || 0),
+      const userTime = results.reduce(
+        (acc, curr) => acc + (parseFloat(curr.user_time_ms) || 0),
         0
       )
-      const caseCount = results.length || 1
-      const time = Math.round(totalTime * 1000)
+      const time = Math.round(userTime)
       const memory =
         results.reduce(
           (acc, curr) => Math.max(acc, parseFloat(curr.memory) || 0),

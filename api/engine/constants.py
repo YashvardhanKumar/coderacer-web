@@ -17,11 +17,23 @@ DEFAULT_LIMITS = {
 TC_SEPARATOR = "___CODERACER_TC_SEP___"
 
 
+# Max limits enforced by Judge0 CE public API
+JUDGE0_MAX_CPU_TIME_LIMIT = 20
+JUDGE0_MAX_WALL_TIME_LIMIT = 30
+JUDGE0_MAX_CPU_EXTRA_TIME = 5
+
+
 def get_scaled_limits(num_testcases):
     """Scale resource limits proportionally to number of test cases."""
     limits = DEFAULT_LIMITS.copy()
     scale = min(num_testcases, 20)  # Cap at 20x
-    limits["cpu_time_limit"] = min(limits["cpu_time_limit"] * scale, 60)
-    limits["cpu_extra_time"] = min(limits["cpu_extra_time"] * scale, 10)
-    limits["wall_time_limit"] = min(limits["wall_time_limit"] * scale, 120)
+    limits["cpu_time_limit"] = min(
+        limits["cpu_time_limit"] * scale, JUDGE0_MAX_CPU_TIME_LIMIT
+    )
+    limits["cpu_extra_time"] = min(
+        limits["cpu_extra_time"] * scale, JUDGE0_MAX_CPU_EXTRA_TIME
+    )
+    limits["wall_time_limit"] = min(
+        limits["wall_time_limit"] * scale, JUDGE0_MAX_WALL_TIME_LIMIT
+    )
     return limits

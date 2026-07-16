@@ -197,6 +197,7 @@ def _generate_java_multi_runner(
         f"{_3}List<String> outputs = new ArrayList<>();\n"
         f"{_3}{class_name} obj = null;\n"
         f'{_3}System.out.println("_USER_PRINT_START_");\n'
+        f"{_3}long _total_t_ns = 0L;\n"
         f"{_3}for(int i=0; i<num_cmds; i++) {{\n"
         f"{_4}String cmd = commands[i];\n"
         f"{_4}int arg_len = sc.nextInt();\n"
@@ -238,6 +239,7 @@ def _generate_java_multi_runner(
             continue
         inputs = list(method.parameters.all().order_by("id"))
         runner_code += f'{_4}else if (cmd.equals("{method.name}")) {{\n'
+        runner_code += f"{_5}long _ts = System.nanoTime();\n"
         for v in inputs:
             if v.type == VariableType.ARRAY:
                 runner_code += (
@@ -258,6 +260,8 @@ def _generate_java_multi_runner(
         if method.type != "void" and method.type != "VOID" and method.type:
             runner_code += (
                 f"{_5}{get_java_type(method.type, method.template_type, method.array_dimensions)} res = {call};\n"
+                f"{_5}long _te = System.nanoTime();\n"
+                f"{_5}_total_t_ns += (_te - _ts);\n"
                 f"{_5}java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();\n"
                 f"{_5}java.io.PrintStream ps = new java.io.PrintStream(baos);\n"
                 f"{_5}java.io.PrintStream old = System.out;\n"
@@ -273,12 +277,19 @@ def _generate_java_multi_runner(
                 f"{_5}outputs.add(baos.toString());\n"
             )
         else:
-            runner_code += f"{_5}{call};\n" f'{_5}outputs.add("null");\n'
+            runner_code += (
+                f"{_5}{call};\n"
+                f"{_5}long _te = System.nanoTime();\n"
+                f"{_5}_total_t_ns += (_te - _ts);\n"
+                f'{_5}outputs.add("null");\n'
+            )
         runner_code += f"{_4}}}\n"
 
     runner_code += (
         f"{_3}}}\n"
         f'{_3}System.out.println("_USER_PRINT_END_");\n'
+        f"{_3}long _tc_t_ns = _total_t_ns;\n"
+        f'{_3}System.out.println("_TIME_" + _tc_t_ns + "_");\n'
         f'{_3}System.out.print("[");\n'
         f"{_3}for (int i = 0; i < outputs.size(); i++) {{\n"
         f'{_4}if (i > 0) System.out.print(",");\n'
@@ -373,10 +384,7 @@ def _generate_java_code(
                     runner_code += f"{_3}{t_java} {v.name} = sc.next();\n"
 
         call = f"sol.{method.name}({', '.join([v.name for v in inputs])})"
-        runner_code += (
-            f"\n{_3}{class_name} sol = new {class_name}();\n"
-            f'{_3}System.out.println("_USER_PRINT_START_");\n'
-        )
+        runner_code += f"\n{_3}{class_name} sol = new {class_name}();\n"
         if (
             method.type != "void"
             and method.type != "VOID"
@@ -384,8 +392,13 @@ def _generate_java_code(
             and ret_type != "void"
         ):
             runner_code += (
+                f'{_3}System.out.println("_USER_PRINT_START_");\n'
+                f"{_3}long _t0 = System.nanoTime();\n"
                 f"{_3}{ret_type} result = {call};\n"
+                f"{_3}long _t1 = System.nanoTime();\n"
+                f"{_3}long _tc_t_ns = _t1 - _t0;\n"
                 f'{_3}System.out.println("_USER_PRINT_END_");\n'
+                f'{_3}System.out.println("_TIME_" + _tc_t_ns + "_");\n'
             )
             if has_custom_print(input_output_function, method.type, "JAVA"):
                 runner_code += f"{_3}Parser.print(result);\n{_3}System.out.println();\n"
@@ -395,7 +408,13 @@ def _generate_java_code(
                 )
         else:
             runner_code += (
-                f"{_3}{call};\n" f'{_3}System.out.println("_USER_PRINT_END_");\n'
+                f'{_3}System.out.println("_USER_PRINT_START_");\n'
+                f"{_3}long _t0 = System.nanoTime();\n"
+                f"{_3}{call};\n"
+                f"{_3}long _t1 = System.nanoTime();\n"
+                f"{_3}long _tc_t_ns = _t1 - _t0;\n"
+                f'{_3}System.out.println("_USER_PRINT_END_");\n'
+                f'{_3}System.out.println("_TIME_" + _tc_t_ns + "_");\n'
             )
         runner_code += (
             f'{_3}System.out.println("___CODERACER_TC_SEP___");\n'

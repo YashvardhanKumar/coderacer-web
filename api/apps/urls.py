@@ -19,6 +19,10 @@ from problem.admin_views import (
     generate_testcases_async,
     generate_codeblocks_preview,
     check_codeblocks_status,
+    generate_programmatic_async,
+    get_problem_scaffolds,
+    generate_generator_code_ai,
+    save_generator_code,
 )
 from ai.views import TaskStatusView
 from django.conf import settings
@@ -40,6 +44,26 @@ urlpatterns = [
                     "generate-ai-async/",
                     generate_testcases_async,
                     name="generate_ai_async",
+                ),
+                path(
+                    "generate-programmatic-async/",
+                    generate_programmatic_async,
+                    name="generate_programmatic_async",
+                ),
+                path(
+                    "get-problem-scaffolds/",
+                    get_problem_scaffolds,
+                    name="get_problem_scaffolds",
+                ),
+                path(
+                    "generate-generator-code-ai/",
+                    generate_generator_code_ai,
+                    name="generate_generator_code_ai",
+                ),
+                path(
+                    "save-generator-code/",
+                    save_generator_code,
+                    name="save_generator_code",
                 ),
                 path(
                     "generate-codeblocks-preview/",

@@ -1,7 +1,7 @@
 import os
 import json
 from celery import shared_task
-from .models import TaskLog
+from engine.models import TaskLog
 from .services import AIService
 from problem.models import Problem, Testcase, DataType
 

@@ -6,6 +6,8 @@ interface TestResultDetailProps {
     expected_output?: string
     stderr?: string | null
     compile_output?: string | null
+    user_time_ms?: number
+    memory?: number
   } | null
   testcase?: TestcaseList
   variables?: Variable[]

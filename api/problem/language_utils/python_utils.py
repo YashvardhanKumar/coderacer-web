@@ -84,6 +84,7 @@ def _generate_python_multi_runner(methods, class_name, constructor_method):
         f"{_2}outputs = []\n"
         f"{_2}obj = None\n"
         f"{_2}print('_USER_PRINT_START_')\n"
+        f"{_2}_total_time_ns = 0\n"
         f"{_2}for cmd, args in zip(commands, args_list):\n"
     )
 
@@ -104,6 +105,7 @@ def _generate_python_multi_runner(methods, class_name, constructor_method):
         if method.is_constructor:
             continue
         runner_code += f"{_3}elif cmd == '{method.name}':\n"
+        runner_code += f"{_4}__s = time.perf_counter()\n"
         if method.type != "void" and method.type != "VOID" and method.type:
             runner_code += (
                 f"{_4}res = obj.{method.name}(*args)\n" f"{_4}outputs.append(res)\n"
@@ -112,9 +114,13 @@ def _generate_python_multi_runner(methods, class_name, constructor_method):
             runner_code += (
                 f"{_4}obj.{method.name}(*args)\n" f"{_4}outputs.append(None)\n"
             )
+        runner_code += f"{_4}__e = time.perf_counter()\n"
+        runner_code += f"{_4}_total_time_ns += (__e - __s) * 1_000_000_000\n"
 
     runner_code += (
         f"{_2}print('_USER_PRINT_END_')\n"
+        f"{_2}tc_time_ns = _total_time_ns\n"
+        f"{_2}print(f'_TIME_{{tc_time_ns:.0f}}_')\n"
         f"{_2}print(json.dumps(outputs, separators=(',', ':'), cls=CustomEncoder))\n"
         f'{_2}print("___CODERACER_TC_SEP___")\n\n'
         f"{T}if __name__ == '__main__':\n{T}    main()\n"
@@ -190,9 +196,15 @@ def _generate_python_code(
                 )
 
         call = f"sol.{method.name}({', '.join([v.name for v in inputs])})"
-        runner_code += f"\n{_2}sol = Solution()\n" f'{_2}print("_USER_PRINT_START_")\n'
+        runner_code += f"\n{_2}sol = Solution()\n"
         if method.type != "void" and method.type != "VOID" and method.type:
-            runner_code += f"{_2}result = {call}\n" f'{_2}print("_USER_PRINT_END_")\n'
+            runner_code += f'{_2}print("_USER_PRINT_START_")\n'
+            runner_code += f"{_2}_start = time.perf_counter()\n"
+            runner_code += f"{_2}result = {call}\n"
+            runner_code += f"{_2}_end = time.perf_counter()\n"
+            runner_code += f"{_2}tc_time_ns = (_end - _start) * 1_000_000_000\n"
+            runner_code += f'{_2}print("_USER_PRINT_END_")\n'
+            runner_code += f"{_2}print(f'_TIME_{{tc_time_ns:.0f}}_')\n"
             if has_custom_print(input_output_function, method.type, "PYTHON"):
                 runner_code += f"{_2}printOutput(result)\n"
             else:
@@ -204,7 +216,13 @@ def _generate_python_code(
                     depth=2,
                 )
         else:
-            runner_code += f"{_2}{call}\n" f'{_2}print("_USER_PRINT_END_")\n'
+            runner_code += f'{_2}print("_USER_PRINT_START_")\n'
+            runner_code += f"{_2}_start = time.perf_counter()\n"
+            runner_code += f"{_2}{call}\n"
+            runner_code += f"{_2}_end = time.perf_counter()\n"
+            runner_code += f"{_2}tc_time_ns = (_end - _start) * 1_000_000_000\n"
+            runner_code += f'{_2}print("_USER_PRINT_END_")\n'
+            runner_code += f"{_2}print(f'_TIME_{{tc_time_ns:.0f}}_')\n"
         runner_code += (
             f'{_2}print("___CODERACER_TC_SEP___")\n'
             f"\n{T}if __name__ == '__main__':\n{T}    main()\n"

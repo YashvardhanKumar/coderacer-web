@@ -1,7 +1,35 @@
 {% extends "problem/rootops_base.html" %}
 {% load i18n static %}
 
-{% block rootops_extra_style %}{% endblock %}
+{% block rootops_extra_style %}
+<style>
+#prog-generation-form .cm-editor { min-height: 200px; }
+#prog-generation-form .cm-scroller { max-height: 400px; }
+.btn-ai-gen {
+    font-size: 12px; padding: 4px 12px; background: #9b59b6; color: #fff;
+    border: none; border-radius: 4px; cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 5px;
+}
+.btn-ai-gen:hover:not(:disabled) { background: #8e44ad; }
+.btn-ai-gen:disabled { opacity: 0.7; cursor: not-allowed; }
+.btn-ai-gen.generating { animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+.ai-gen-indicator {
+    display: none; align-items: center; gap: 6px; font-size: 12px;
+    padding: 4px 8px; border-radius: 4px; margin-top: 4px;
+}
+.ai-gen-indicator.active { display: inline-flex; }
+.ai-gen-indicator.success { color: #2ecc71; background: rgba(46,204,113,0.1); }
+.ai-gen-indicator.error { color: #e74c3c; background: rgba(231,76,60,0.1); }
+.ai-gen-indicator.generating { color: #f39c12; background: rgba(243,156,18,0.1); }
+.ai-gen-spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+<script src="{% static 'admin/js/cm6_loader.js' %}"></script>
+{% endblock %}
 
 {% block rootops_content %}
 <div class="main-container">
@@ -36,6 +64,78 @@
         </form>
     </div>
 
+    <!-- Programmatic Card -->
+    <div class="card card-prog" style="margin-top: 30px; border-left: 5px solid #00bcd4;">
+        <h1><i class="fas fa-code"></i> Programmatic Testcase Generator</h1>
+        <p style="color: #aaa; margin-bottom: 25px;">Generate test cases programmatically using a generator script and a reference solution.</p>
+
+        <form id="prog-generation-form">
+            {% csrf_token %}
+            <div class="field-wrapper">
+                <label>{{ prog_form.problem.label }}</label>
+                {{ prog_form.problem }}
+            </div>
+
+            <div class="field-wrapper">
+                <label>Generator Language</label>
+                {{ prog_form.generator_language }}
+            </div>
+
+            <div class="field-wrapper">
+                <label>Generator Code</label>
+                <button type="button" id="btn-ai-gen-code" class="btn-ai-gen" style="background: #9b59b6;">
+                    <i class="fas fa-magic"></i> Generate with AI
+                </button>
+                <button type="button" id="btn-save-gen-code" class="btn-ai-gen" style="background: #2ecc71;">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <div class="codeblock-item" data-lang="PYTHON" style="background: transparent; padding: 0; border-radius: 0; margin-bottom: 0; border-left: none;">
+                    {{ prog_form.generator_code }}
+                </div>
+                <div id="ai-gen-indicator" class="ai-gen-indicator"></div>
+            </div>
+
+            <div class="field-wrapper" style="margin-top: 10px;">
+                <label>Solution Language</label>
+                {{ prog_form.solution_language }}
+            </div>
+
+            <div class="field-wrapper" style="margin-top: 10px;">
+                <label>Reference Solution Code</label>
+                <div class="codeblock-item" data-lang="CPP" id="sol-code-wrapper" style="background: transparent; padding: 0; border-radius: 0; margin-bottom: 0; border-left: none;">
+                    {{ prog_form.solution_code }}
+                </div>
+            </div>
+
+            <div class="field-wrapper" style="margin-top: 10px;">
+                <label>Number of Test Cases</label>
+                {{ prog_form.count }}
+            </div>
+
+            <!-- Read-only Code Scaffold area (hidden, only used internally) -->
+            <div class="field-wrapper" id="scaffold-wrapper" style="display: none;">
+                <label>Active Problem Code Scaffold (For Reference)</label>
+                <textarea id="scaffold-view" class="custom-input" rows="12" readonly></textarea>
+                <small style="color: #aaa;">Your reference solution code will be inserted into the problem template.</small>
+            </div>
+
+            <div class="progress-container" id="prog-progress-container" style="display: none; height: 10px; background-color: #333; border-radius: 5px; margin: 15px 0; overflow: hidden;">
+                <div id="prog-progress-bar" style="height: 100%; width: 0%; background-color: #00bcd4; transition: width 0.4s ease;"></div>
+            </div>
+
+            <div id="prog-log-terminal" style="display: none; background: #111; color: #0f0; font-family: monospace; padding: 15px; border-radius: 5px; height: 150px; overflow-y: auto; font-size: 13px; margin: 15px 0;"></div>
+
+            <div class="submit-row">
+                <button type="button" id="btn-show-prog-logs" class="btn-logs" style="display: none;" onclick="toggleProgLogs()">
+                    <i class="fas fa-terminal"></i> Show Logs
+                </button>
+                <button type="button" id="btn-prog-submit" class="btn-ai" style="background-color: #00bcd4;" onclick="startProgrammaticGeneration()">
+                    <i class="fas fa-cog"></i> Generate Programmatically
+                </button>
+            </div>
+        </form>
+    </div>
+
     <div class="divider"><span>OR</span></div>
 
     <!-- Manual Card -->
@@ -60,9 +160,235 @@
     let pollingInterval = null;
     let lastLogCount = 0;
 
+    let progPollingInterval = null;
+    let lastProgLogCount = 0;
+
+    function setCMValue(ta, code) {
+        if (!ta) return;
+        if (ta._cmView) {
+            ta._cmView.dispatch({
+                changes: {from: 0, to: ta._cmView.state.doc.length, insert: code}
+            });
+        } else {
+            ta.value = code;
+        }
+    }
+
+    async function updateScaffolds(includeGenerator) {
+        const progForm = document.getElementById('prog-generation-form');
+        const progProblemSelect = progForm ? progForm.querySelector('select[name="problem"]') : null;
+        const solLangSelect = progForm ? progForm.querySelector('select[name="solution_language"]') : null;
+        const scaffoldWrapper = document.getElementById('scaffold-wrapper');
+        const scaffoldView = document.getElementById('scaffold-view');
+
+        if (!progProblemSelect || !solLangSelect) return;
+
+        const problemId = progProblemSelect.value;
+        const solLang = solLangSelect.value;
+
+        if (!problemId) return;
+
+        try {
+            const response = await fetch(`/api/rootops/get-problem-scaffolds/?problem_id=${problemId}`);
+            const data = await response.json();
+
+            if (data[solLang]) {
+                scaffoldView.value = data[solLang];
+                // Populate the reference solution code textarea
+                const solTa = progForm.querySelector('textarea[name="solution_code"]');
+                setCMValue(solTa, data[solLang]);
+            }
+
+            // Auto-populate generator code from problem's variable types (only on problem change)
+            if (includeGenerator && data.generator_code) {
+                const genTa = progForm.querySelector('textarea[name="generator_code"]');
+                setCMValue(genTa, data.generator_code);
+            }
+        } catch (error) {
+            console.error('Failed to fetch scaffolds:', error);
+        }
+    }
+
+    function safeInitCM(ta, lang) {
+        if (!ta || ta._cmView) return true;
+        try {
+            if (typeof initCodeMirror === 'function') {
+                if (lang) {
+                    const wrapper = ta.closest('.codeblock-item') || ta.parentNode;
+                    wrapper.setAttribute('data-lang', lang);
+                }
+                initCodeMirror(ta);
+                return !!ta._cmView;
+            }
+        } catch(e) { console.warn('CM init error:', e); }
+        return false;
+    }
+
+    var _cmRetries = 0;
+    function initCodeMirrors() {
+        if (_cmRetries++ > 30) return;
+        const progForm = document.getElementById('prog-generation-form');
+        if (!progForm) return;
+
+        let done = true;
+
+        const genTa = progForm.querySelector('textarea[name="generator_code"]');
+        if (genTa && !genTa._cmView) {
+            if (!safeInitCM(genTa, 'PYTHON')) done = false;
+        }
+
+        const solTa = progForm.querySelector('textarea[name="solution_code"]');
+        if (solTa && !solTa._cmView) {
+            const solLang = progForm.querySelector('select[name="solution_language"]');
+            const lang = solLang ? solLang.value : 'CPP';
+            if (!safeInitCM(solTa, lang)) done = false;
+        }
+
+        const solLangSelect = progForm.querySelector('select[name="solution_language"]');
+        if (solLangSelect && !solLangSelect._progCmListener) {
+            solLangSelect._progCmListener = true;
+            solLangSelect.addEventListener('change', () => {
+                const ta = progForm.querySelector('textarea[name="solution_code"]');
+                if (ta && ta._cmView) {
+                    ta.value = ta._cmView.state.doc.toString();
+                    ta._cmView.destroy();
+                    ta._cmView = null;
+                }
+                const wrapper = document.getElementById('sol-code-wrapper');
+                if (wrapper) wrapper.setAttribute('data-lang', solLangSelect.value);
+                if (ta) safeInitCM(ta, solLangSelect.value);
+            });
+        }
+
+        if (!done) setTimeout(initCodeMirrors, 300);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const progForm = document.getElementById('prog-generation-form');
+        if (!progForm) return;
+        const progProblemSelect = progForm.querySelector('select[name="problem"]');
+        if (progProblemSelect) {
+            progProblemSelect.addEventListener('change', () => updateScaffolds(true));
+        }
+        const solLangSelect = progForm.querySelector('select[name="solution_language"]');
+        if (solLangSelect) {
+            solLangSelect.addEventListener('change', () => updateScaffolds(false));
+        }
+        updateScaffolds(true);
+        initCodeMirrors();
+
+        // AI generate generator code button
+        const genCodeBtn = document.getElementById('btn-ai-gen-code');
+        const genCodeIndicator = document.getElementById('ai-gen-indicator');
+        const genCodeTa = progForm.querySelector('textarea[name="generator_code"]');
+        if (genCodeBtn && genCodeTa) {
+            genCodeBtn.addEventListener('click', async () => {
+                const problemId = progProblemSelect.value;
+                if (!problemId) {
+                    genCodeIndicator.className = 'ai-gen-indicator active error';
+                    genCodeIndicator.innerHTML = 'Select a problem first.';
+                    return;
+                }
+                genCodeBtn.disabled = true;
+                genCodeBtn.classList.add('generating');
+                genCodeBtn.innerHTML = '<span class="ai-gen-spinner"></span> Generating...';
+                genCodeIndicator.className = 'ai-gen-indicator active generating';
+                genCodeIndicator.innerHTML = '<span class="ai-gen-spinner"></span> Asking AI...';
+                genCodeBtn.disabled = true;
+                genCodeBtn.classList.add('generating');
+                genCodeBtn.innerHTML = '<span class="ai-gen-spinner"></span> Generating...';
+                genCodeIndicator.className = 'ai-gen-indicator active generating';
+                genCodeIndicator.innerHTML = '<span class="ai-gen-spinner"></span> Asking AI...';
+                try {
+                    const csrfToken = progForm.querySelector('[name=csrfmiddlewaretoken]');
+                    if (!csrfToken) {
+                        throw new Error('CSRF token not found');
+                    }
+                    const resp = await fetch('{% url "generate_generator_code_ai" %}', {
+                        method: 'POST',
+                        headers: {'X-CSRFToken': csrfToken.value},
+                        body: new URLSearchParams({problem_id: problemId}),
+                    });
+                    const data = await resp.json();
+                    if (data.code) {
+                        setCMValue(genCodeTa, data.code);
+                        genCodeIndicator.className = 'ai-gen-indicator active success';
+                        genCodeIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Generated by ' + (data.provider || 'AI');
+                    } else {
+                        throw new Error(data.error || 'Unknown response');
+                    }
+                } catch (e) {
+                    console.error('AI gen error:', e);
+                    genCodeIndicator.className = 'ai-gen-indicator active error';
+                    genCodeIndicator.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + e.message;
+                } finally {
+                    genCodeBtn.disabled = false;
+                    genCodeBtn.classList.remove('generating');
+                    genCodeBtn.innerHTML = '<i class="fas fa-magic"></i> Generate with AI';
+                }
+            });
+        }
+
+        // Save generator code button
+        const saveGenBtn = document.getElementById('btn-save-gen-code');
+        if (saveGenBtn && genCodeTa) {
+            saveGenBtn.addEventListener('click', async () => {
+                const problemId = progProblemSelect.value;
+                if (!problemId) {
+                    genCodeIndicator.className = 'ai-gen-indicator active error';
+                    genCodeIndicator.innerHTML = '<i class="fas fa-exclamation-circle"></i> Select a problem first.';
+                    return;
+                }
+                const code = genCodeTa._cmView
+                    ? genCodeTa._cmView.state.doc.toString()
+                    : genCodeTa.value;
+                if (!code.trim()) {
+                    genCodeIndicator.className = 'ai-gen-indicator active error';
+                    genCodeIndicator.innerHTML = '<i class="fas fa-exclamation-circle"></i> Generator code is empty.';
+                    return;
+                }
+                saveGenBtn.disabled = true;
+                saveGenBtn.innerHTML = '<span class="ai-gen-spinner"></span> Saving...';
+                try {
+                    const csrfToken = progForm.querySelector('[name=csrfmiddlewaretoken]');
+                    const resp = await fetch('{% url "save_generator_code" %}', {
+                        method: 'POST',
+                        headers: {'X-CSRFToken': csrfToken.value, 'Content-Type': 'application/json'},
+                        body: JSON.stringify({problem_id: problemId, generator_code: code}),
+                    });
+                    const data = await resp.json();
+                    if (data.status === 'ok') {
+                        genCodeIndicator.className = 'ai-gen-indicator active success';
+                        genCodeIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Saved!';
+                    } else {
+                        throw new Error(data.error || 'Save failed');
+                    }
+                } catch (e) {
+                    genCodeIndicator.className = 'ai-gen-indicator active error';
+                    genCodeIndicator.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + e.message;
+                } finally {
+                    saveGenBtn.disabled = false;
+                    saveGenBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+                }
+            });
+        }
+    });
+
     function toggleLogs() {
         const terminal = document.getElementById('log-terminal');
         const btn = document.getElementById('btn-show-logs');
+        if (terminal.style.display === 'none' || terminal.style.display === '') {
+            terminal.style.display = 'block';
+            btn.innerHTML = '<i class="fas fa-terminal"></i> Hide Logs';
+        } else {
+            terminal.style.display = 'none';
+            btn.innerHTML = '<i class="fas fa-terminal"></i> Show Logs';
+        }
+    }
+
+    function toggleProgLogs() {
+        const terminal = document.getElementById('prog-log-terminal');
+        const btn = document.getElementById('btn-show-prog-logs');
         if (terminal.style.display === 'none' || terminal.style.display === '') {
             terminal.style.display = 'block';
             btn.innerHTML = '<i class="fas fa-terminal"></i> Hide Logs';
@@ -83,7 +409,9 @@
         btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Initializing Task...';
         progressContainer.style.display = 'block';
         logBtn.style.display = 'inline-block';
+        terminal.style.display = 'block';
         terminal.innerHTML = '<div class="log-line">> Task requested. Waiting for worker...</div>';
+        lastLogCount = 0;
 
         const formData = new FormData(form);
 
@@ -115,7 +443,6 @@
 
         pollingInterval = setInterval(async () => {
             try {
-                // Construct URL manually to avoid template tag issues in JS
                 const response = await fetch(`/api/rootops/task-status/${taskId}/`);
                 const data = await response.json();
 
@@ -123,7 +450,6 @@
                     btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Running (${data.progress}%)`;
                     progressBar.style.width = data.progress + '%';
 
-                    // Update logs
                     if (data.logs && data.logs.length > lastLogCount) {
                         for (let i = lastLogCount; i < data.logs.length; i++) {
                             addLog(data.logs[i].message);
@@ -138,8 +464,93 @@
                 } else if (data.status === 'ERROR') {
                     clearInterval(pollingInterval);
                     addLog('ERROR: Task failed on worker.', 'color: #f66');
+                    if (data.logs && data.logs.length > lastLogCount) {
+                        for (let i = lastLogCount; i < data.logs.length; i++) {
+                            addLog(data.logs[i].message);
+                        }
+                    }
                     alert('Task Failed. Check logs for details.');
                     resetUI();
+                }
+            } catch (e) {
+                console.error('Polling error:', e);
+            }
+        }, 1500);
+    }
+
+    async function startProgrammaticGeneration() {
+        const form = document.getElementById('prog-generation-form');
+        const btn = document.getElementById('btn-prog-submit');
+        const logBtn = document.getElementById('btn-show-prog-logs');
+        const progressContainer = document.getElementById('prog-progress-container');
+        const terminal = document.getElementById('prog-log-terminal');
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Initializing Task...';
+        progressContainer.style.display = 'block';
+        logBtn.style.display = 'inline-block';
+        terminal.style.display = 'block';
+        terminal.innerHTML = '<div class="log-line">> Task requested. Waiting for worker...</div>';
+        lastProgLogCount = 0;
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('{% url "generate_programmatic_async" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            });
+            const data = await response.json();
+
+            if (data.task_id) {
+                pollProgTaskStatus(data.task_id);
+            } else {
+                throw new Error(data.error || "Failed to start task");
+            }
+        } catch (error) {
+            addProgLog('ERROR: ' + error.message, 'color: #f66');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-cog"></i> Generate Programmatically';
+        }
+    }
+
+    function pollProgTaskStatus(taskId) {
+        const progressBar = document.getElementById('prog-progress-bar');
+        const btn = document.getElementById('btn-prog-submit');
+
+        progPollingInterval = setInterval(async () => {
+            try {
+                const response = await fetch(`/api/rootops/task-status/${taskId}/`);
+                const data = await response.json();
+
+                if (data.status === 'PROCESSING' || data.status === 'PENDING') {
+                    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Running (${data.progress}%)`;
+                    progressBar.style.width = data.progress + '%';
+
+                    if (data.logs && data.logs.length > lastProgLogCount) {
+                        for (let i = lastProgLogCount; i < data.logs.length; i++) {
+                            addProgLog(data.logs[i].message);
+                        }
+                        lastProgLogCount = data.logs.length;
+                    }
+                } else if (data.status === 'SUCCESS') {
+                    clearInterval(progPollingInterval);
+                    progressBar.style.width = '100%';
+                    addProgLog('SUCCESS: Task completed successfully!', 'color: #0f0');
+                    resetProgUI();
+                } else if (data.status === 'ERROR') {
+                    clearInterval(progPollingInterval);
+                    addProgLog('ERROR: Task failed on worker.', 'color: #f66');
+                    if (data.logs && data.logs.length > lastProgLogCount) {
+                        for (let i = lastProgLogCount; i < data.logs.length; i++) {
+                            addProgLog(data.logs[i].message);
+                        }
+                    }
+                    alert('Task Failed. Check logs for details.');
+                    resetProgUI();
                 }
             } catch (e) {
                 console.error('Polling error:', e);
@@ -157,10 +568,26 @@
         terminal.scrollTop = terminal.scrollHeight;
     }
 
+    function addProgLog(msg, style = '') {
+        const terminal = document.getElementById('prog-log-terminal');
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.style = style;
+        line.innerHTML = `> ${msg}`;
+        terminal.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
     function resetUI() {
         const btn = document.getElementById('btn-ai-submit');
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-magic"></i> Generate with AI';
+    }
+
+    function resetProgUI() {
+        const btn = document.getElementById('btn-prog-submit');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-cog"></i> Generate Programmatically';
     }
 </script>
 {% endblock %}

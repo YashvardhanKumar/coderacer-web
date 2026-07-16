@@ -526,10 +526,12 @@ def add_problem_custom(request):
 
     manual_form = None
     ai_form = None
+    prog_form = None
     if step == 7 and problem:
         manual_form = CustomTestcaseForm(initial={"problem": problem})
         # AI Form defaults to 10 count. We can set problem initial here too
         ai_form = AITestCaseForm(initial={"problem": problem, "count": 10})
+        prog_form = ProgrammaticTestCaseForm(initial={"problem": problem, "count": 20})
 
     empty_var_form = var_formset.empty_form
     if problem:
@@ -555,6 +557,7 @@ def add_problem_custom(request):
             "formset": formset,
             "manual_form": manual_form,
             "ai_form": ai_form,
+            "prog_form": prog_form,
             "languages": CodingLanguage.choices,
             "loading": loading,
         },
@@ -565,6 +568,7 @@ def add_problem_custom(request):
 def add_testcase_custom(request):
     manual_form = CustomTestcaseForm()
     ai_form = AITestCaseForm()
+    prog_form = ProgrammaticTestCaseForm()
 
     if request.method == "POST":
         manual_form = CustomTestcaseForm(request.POST)
@@ -578,7 +582,11 @@ def add_testcase_custom(request):
     return render(
         request,
         "problem/add_testcase_custom.html",
-        {"form": manual_form, "ai_form": ai_form},
+        {
+            "form": manual_form,
+            "ai_form": ai_form,
+            "prog_form": prog_form,
+        },
     )
 
 
@@ -638,3 +646,579 @@ def check_codeblocks_status(request):
         )
     except Problem.DoesNotExist:
         return JsonResponse({"ready": False, "count": 0})
+
+
+class ProgrammaticTestCaseForm(forms.Form):
+    problem = forms.ModelChoiceField(
+        queryset=Problem.objects.all(), label="Select Problem"
+    )
+    generator_language = forms.ChoiceField(
+        choices=[("PYTHON", "Python")],
+        initial="PYTHON",
+        label="Generator Language",
+        widget=forms.Select(attrs={"class": "custom-input"}),
+    )
+    generator_code = forms.CharField(
+        widget=forms.Textarea(
+            attrs={
+                "class": "custom-input code-editor",
+                "rows": 10,
+                "placeholder": (
+                    "Write generator code...\n"
+                    "It should read the seed from stdin (e.g. cin >> seed; or seed = int(input())) and print a single testcase input to stdout."
+                ),
+            }
+        ),
+        label="Generator Code",
+    )
+    solution_language = forms.ChoiceField(
+        choices=[("CPP", "C++"), ("PYTHON", "Python")],
+        initial="CPP",
+        label="Reference Solution Language",
+        widget=forms.Select(attrs={"class": "custom-input"}),
+    )
+    solution_code = forms.CharField(
+        widget=forms.Textarea(
+            attrs={
+                "class": "custom-input code-editor",
+                "rows": 10,
+                "placeholder": "Write reference solution code (Solution class/method)...",
+            }
+        ),
+        label="Reference Solution Code",
+    )
+    count = forms.IntegerField(
+        min_value=1, max_value=100, initial=20, label="Number of Test Cases"
+    )
+
+
+def build_generator_code(problem):
+    """Generate a Python generator template based on problem's variable types."""
+    import random as _r
+
+    variables = problem.variables.select_related("method").order_by("method", "id")
+    if not variables:
+        return """import random
+import json
+import sys
+
+def generate():
+    seed = int(sys.stdin.readline().strip())
+    rng = random.Random(seed)
+    # TODO: define test case generation logic
+    print("1")
+
+if __name__ == "__main__":
+    generate()
+"""
+    is_multi = getattr(problem, "is_multi", False)
+    if is_multi:
+        methods = list(problem.methods.all())
+        constructor = next(
+            (m for m in methods if m.is_constructor), methods[0] if methods else None
+        )
+        non_constructor = [m for m in methods if m != constructor]
+
+        def gen_var_code(method, indent="    "):
+            method_vars = [v for v in variables if v.method_id == method.id]
+            var_lines = []
+            for v in method_vars:
+                var_lines.append(f"{indent}# {v.name}: TODO set correct range")
+                if v.type == "INTEGER":
+                    var_lines.append(f"{indent}{v.name} = rng.randint(1, 100)")
+                elif v.type == "FLOAT":
+                    var_lines.append(
+                        f"{indent}{v.name} = round(rng.uniform(0.0, 100.0), 2)"
+                    )
+                elif v.type == "BOOLEAN":
+                    var_lines.append(f"{indent}{v.name} = rng.randint(0, 1) == 1")
+                elif v.type == "STRING":
+                    var_lines.append(
+                        f'{indent}{v.name} = "".join(rng.choices(string.ascii_lowercase, k=rng.randint(1, 10)))'
+                    )
+                elif v.type == "ARRAY":
+                    var_lines.append(
+                        f"{indent}{v.name} = [rng.randint(1, 100) for _ in range(rng.randint(1, 10))]"
+                    )
+                else:
+                    var_lines.append(
+                        f"{indent}{v.name} = None  # TODO: generate {v.type} value"
+                    )
+            return var_lines
+
+        constr_vars_code = gen_var_code(constructor) if constructor else []
+        constr_vars_names = [
+            v.name
+            for v in variables
+            if v.method_id == (constructor.id if constructor else None)
+        ]
+
+        # Build per-method variable generation
+        method_blocks = []
+        if constructor:
+            constr_args = ", ".join(constr_vars_names)
+            method_blocks.append(f"    # Constructor: {constructor.name}")
+            method_blocks.extend(constr_vars_code)
+            method_blocks.append(f'    methods = ["{constructor.name}"]')
+            method_blocks.append(f"    args = [[{constr_args}]]")
+        else:
+            method_blocks.append("    methods = []")
+            method_blocks.append("    args = []")
+
+        method_blocks.append("")
+        if non_constructor:
+            method_blocks.append("    # Random non-constructor calls")
+            method_blocks.append(f"    num_calls = rng.randint(1, 5)")
+            choices_str = ", ".join(f'"{m.name}"' for m in non_constructor)
+            method_blocks.append(f"    for _ in range(num_calls):")
+            method_blocks.append(f"        method_choice = rng.choice([{choices_str}])")
+            for i, m in enumerate(non_constructor):
+                method_name = m.name
+                m_vars = [v for v in variables if v.method_id == m.id]
+                m_var_names = [v.name for v in m_vars]
+                m_var_names_str = ", ".join(m_var_names)
+                m_var_code = gen_var_code(m, indent="            ")
+                keyword = "if" if i == 0 else "elif"
+                method_blocks.append(
+                    f'        {keyword} method_choice == "{method_name}":'
+                )
+                method_blocks.append(f"            # {method_name}")
+                method_blocks.extend(m_var_code)
+                method_blocks.append(f'            methods.append("{method_name}")')
+                method_blocks.append(f"            args.append([{m_var_names_str}])")
+
+        method_code = "\n".join(method_blocks)
+
+        return f"""import random
+import json
+import sys
+import string
+
+def generate():
+    seed = int(sys.stdin.readline().strip())
+    rng = random.Random(seed)
+{method_code}
+    print(json.dumps(methods))
+    print(json.dumps(args))
+
+if __name__ == "__main__":
+    generate()
+"""
+
+    lines = [
+        "import random",
+        "import json",
+        "import sys",
+        "import string",
+        "",
+        "def generate():",
+        "    seed = int(sys.stdin.readline().strip())",
+        "    rng = random.Random(seed)",
+        "",
+        "    # Generate values for each variable in order",
+    ]
+
+    # Generate value and print-line for each variable
+    for var in variables:
+        name = var.name
+        raw_type = var.type or "INTEGER"
+        var_type_upper = raw_type.upper()
+        ttype = (var.template_type or "").upper()
+        dims = var.array_dimensions or 1
+
+        from problem.models import VariableType as _VT, CustomType as _CT
+
+        _std_types = {v.value.upper() for v in _VT}
+
+        lines.append("    # {name}: {type}".format(name=name, type=raw_type))
+
+        if var_type_upper in ("INTEGER", "LONG"):
+            lines.append("    {name} = rng.randint(-1000, 1000)".format(name=name))
+            lines.append("    print({name})".format(name=name))
+        elif var_type_upper == "FLOAT":
+            lines.append(
+                "    {name} = round(rng.uniform(-1000.0, 1000.0), 2)".format(name=name)
+            )
+            lines.append("    print({name})".format(name=name))
+        elif var_type_upper == "BOOLEAN":
+            lines.append("    {name} = rng.choice([True, False])".format(name=name))
+            lines.append("    print('true' if {name} else 'false')".format(name=name))
+        elif var_type_upper == "CHAR":
+            lines.append(
+                "    {name} = rng.choice(string.ascii_letters)".format(name=name)
+            )
+            lines.append("    print({name})".format(name=name))
+        elif var_type_upper == "STRING":
+            lines.append(
+                "    {name} = ''.join(rng.choices(string.ascii_lowercase, k=rng.randint(1, 20)))".format(
+                    name=name
+                )
+            )
+            lines.append("    print(json.dumps({name}))".format(name=name))
+        elif var_type_upper == "ARRAY":
+            _inner = ttype if ttype else "INTEGER"
+            _inner_upper = _inner.upper()
+            if dims == 1:
+                if _inner_upper in ("INTEGER", "LONG"):
+                    _elem = "rng.randint(-100, 100)"
+                elif _inner_upper == "FLOAT":
+                    _elem = "round(rng.uniform(-100.0, 100.0), 2)"
+                elif _inner_upper == "BOOLEAN":
+                    _elem = "rng.choice([True, False])"
+                elif _inner_upper == "CHAR":
+                    _elem = "rng.choice(string.ascii_letters)"
+                elif _inner_upper == "STRING":
+                    _elem = "''.join(rng.choices(string.ascii_lowercase, k=rng.randint(1, 10)))"
+                else:
+                    _elem = "rng.randint(-100, 100)"
+                lines.append("    n = rng.randint(1, 10)")
+                lines.append(
+                    "    {name} = [{elem} for _ in range(n)]".format(
+                        name=name, elem=_elem
+                    )
+                )
+                lines.append("    print(json.dumps({name}))".format(name=name))
+            else:
+                lines.append(
+                    "    {name} = [[rng.randint(-100, 100) for _ in range(rng.randint(1, 5))] for __ in range(rng.randint(1, 5))]".format(
+                        name=name
+                    )
+                )
+                lines.append("    print(json.dumps({name}))".format(name=name))
+        elif var_type_upper == "OBJECT":
+            lines.append(
+                "    # TODO: generate object data matching problem's object structure"
+            )
+            lines.append(
+                "    {name} = {{'key': rng.randint(1, 100)}}".format(name=name)
+            )
+            lines.append("    print(json.dumps({name}))".format(name=name))
+        elif var_type_upper == "VOID":
+            lines.append("    # VOID type — nothing to generate")
+            lines.append("    print('null')")
+        elif var_type_upper in _std_types:
+            # Other standard types (CUSTOM selector, etc.)
+            lines.append(
+                "    # TODO: CUSTOM type generation for {name}".format(name=name)
+            )
+            lines.append("    {name} = None".format(name=name))
+            lines.append(
+                "    print(json.dumps({name}) if {name} is not None else 'null')".format(
+                    name=name
+                )
+            )
+        else:
+            # Custom type name (e.g. ListNode, TreeNode) — look up input format
+            _input_func = ""
+            try:
+                _ct_obj = _CT.objects.get(name=raw_type)
+                from problem.models import CustomTypeLanguage as _CTL
+
+                _py_entry = _ct_obj.languages.filter(language="PYTHON").first()
+                if _py_entry and _py_entry.input_output_function:
+                    _input_func = _py_entry.input_output_function
+            except _CT.DoesNotExist:
+                pass
+
+            if _input_func:
+                lines.append("    # Input format for {type}:".format(type=raw_type))
+                for _ln in _input_func.strip().split("\n"):
+                    lines.append("    #   {ln}".format(ln=_ln))
+            lines.append(
+                "    # TODO: generate {name} data matching the format above".format(
+                    name=name
+                )
+            )
+            lines.append("    {name} = None".format(name=name))
+            lines.append(
+                "    print(json.dumps({name}) if {name} is not None else 'null')".format(
+                    name=name
+                )
+            )
+
+    lines.append("")
+    lines.append('if __name__ == "__main__":')
+    lines.append("    generate()")
+
+    return "\n".join(lines) + "\n"
+
+
+def get_problem_scaffolds(request):
+    problem_id = request.GET.get("problem_id")
+    if not problem_id:
+        return JsonResponse({"error": "Missing problem_id"}, status=400)
+    try:
+        problem = Problem.objects.get(id=problem_id)
+        from problem.models import Codeblock
+        from user.models import CodingLanguage
+
+        def get_solution_code(language, placeholder):
+            cb = Codeblock.objects.filter(problem=problem, language=language).first()
+            return cb.block.strip() if cb and cb.block else placeholder
+
+        cpp_scaffold = get_solution_code(
+            CodingLanguage.CPP, "// YOUR REFERENCE SOLUTION CLASS/METHOD HERE"
+        )
+        python_scaffold = get_solution_code(
+            CodingLanguage.PYTHON, "# YOUR REFERENCE SOLUTION CLASS/METHOD HERE"
+        )
+        generator_code = (
+            problem.generator_code.strip() if problem.generator_code else ""
+        )
+        if not generator_code:
+            generator_code = build_generator_code(problem)
+
+        return JsonResponse(
+            {
+                "CPP": cpp_scaffold,
+                "PYTHON": python_scaffold,
+                "generator_code": generator_code,
+                "saved_generator": bool(problem.generator_code),
+            }
+        )
+    except Problem.DoesNotExist:
+        return JsonResponse({"error": "Problem not found"}, status=404)
+
+
+def generate_generator_code_ai(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid method"}, status=405)
+
+    problem_id = request.POST.get("problem_id")
+    if not problem_id:
+        return JsonResponse({"error": "Missing problem_id"}, status=400)
+
+    try:
+        problem = Problem.objects.get(id=problem_id)
+    except Problem.DoesNotExist:
+        return JsonResponse({"error": "Problem not found"}, status=404)
+
+    # Build method/variable description
+    methods = list(problem.methods.all())
+    methods_str = "\n".join(
+        f"- Method: {m.name} | Return Type: {m.type}" for m in methods
+    )
+
+    from problem.models import VariableType, CustomType, CustomTypeLanguage
+
+    variables = problem.variables.select_related("method").order_by("method", "id")
+    vars_str_lines = []
+    custom_type_names = set()
+    for v in variables:
+        line = f"- Variable: {v.name} | Type: {v.type}"
+        if v.template_type:
+            line += f"<{v.template_type}>"
+        if v.type == "ARRAY":
+            line += f"[] (dim={v.array_dimensions})"
+        if v.method:
+            line += f" | Method param of: {v.method.name}"
+        vars_str_lines.append(line)
+
+        # Track custom type names
+        raw_type = v.type or ""
+        if (
+            raw_type.upper() not in {vt.value.upper() for vt in VariableType}
+            and raw_type != "ARRAY"
+        ):
+            custom_type_names.add(raw_type)
+        if v.template_type and v.template_type.upper() not in {
+            vt.value.upper() for vt in VariableType
+        }:
+            custom_type_names.add(v.template_type)
+    vars_str = "\n".join(vars_str_lines)
+
+    # Gather custom type class declarations for the prompt
+    custom_type_decls = []
+    if custom_type_names:
+        ctl_qs = CustomTypeLanguage.objects.filter(
+            custom_type__name__in=custom_type_names, language="PYTHON"
+        ).select_related("custom_type")
+        for ctl in ctl_qs:
+            if ctl.class_declaration:
+                custom_type_decls.append(
+                    f"Custom type '{ctl.custom_type.name}' Python class:\n{ctl.class_declaration}"
+                )
+    custom_types_section = ""
+    if custom_type_decls:
+        custom_types_section = (
+            "\n\nCustom Type Python Classes:\n" + "\n\n".join(custom_type_decls) + "\n"
+        )
+
+    is_multi = len(methods) > 1 or any(m.is_constructor for m in methods)
+
+    if is_multi:
+        constructor = next((m for m in methods if m.is_constructor), None)
+        constructor_name = constructor.name if constructor else methods[0].name
+        prompt = f"""You are an expert competitive programmer. Generate a Python test case generator for the following multi-method problem.
+
+Problem Description:
+{problem.problem_description}
+
+Methods:
+{methods_str}
+
+Variables (Input):
+{vars_str}
+{custom_types_section}
+RULES:
+- The generator reads an integer seed from stdin: seed = int(sys.stdin.readline().strip())
+- Create a random.Random(seed) instance for reproducibility
+- Generate ONE test case per invocation (each invocation gets a different seed)
+- The test case is TWO LINES of JSON:
+  Line 1: A JSON array of method names in invocation order
+  Line 2: A JSON array of argument arrays, one per method call
+- The constructor ("{constructor_name}") MUST be first, called exactly once
+- After the constructor, call 1–5 additional non-constructor methods in a realistic sequence
+- Each method's arguments must match the variable types listed above
+- The generated test cases MUST be valid — e.g., for BrowserHistory, ensure back/forward steps don't exceed history bounds
+- Read the Constraints section from the Problem Description above. Every variable value must respect those constraints (e.g., if n is constrained 2 ≤ n ≤ 10⁴, generate n within that range)
+- For strings with specific allowed characters in the constraints: if the constraint says a variable "consists of" symbols without listing specific ones, only include these default symbols: , - . ; ' " ! ?. If specific symbols are explicitly listed (e.g., '+', '-', '.'), then include ONLY the listed ones. chars = string.ascii_letters + string.digits + " ,-.;'\\\"!?"; s = "".join(rng.choices(chars, k=rng.randint(0, 200))). If symbols include backslash, double-quote, [, or ] in the allowed set, escape them with a backslash in the Python string so they don't break the string literal or the formatted input (which uses [ ] and ").
+- For arrays, use json.dumps()
+- For custom type objects, convert them to the expected input format
+- For plain integers/strings/floats, pass them directly
+- Do NOT add unnecessary comments. Only add a single-line comment above each variable showing the variable range (e.g., # n: 2 to 10)
+- Output NO explanations, NO markdown — ONLY the Python code. The code must have a generate() function and an if __name__ == "__main__": block.
+
+Example for BrowserHistory (constructor: BrowserHistory(homepage: string), methods: visit(url: string), back(steps: int), forward(steps: int)):
+```python
+import random
+import json
+import sys
+import string
+
+def generate():
+    seed = int(sys.stdin.readline().strip())
+    rng = random.Random(seed)
+    homepage = "".join(rng.choices(string.ascii_lowercase) for _ in range(rng.randint(1, 10)))
+    methods = ["BrowserHistory"]
+    args = [[homepage]]
+    num_calls = rng.randint(1, 5)
+    for _ in range(num_calls):
+        choice = rng.random()
+        if choice < 0.5:
+            url = "".join(rng.choices(string.ascii_lowercase) for _ in range(rng.randint(1, 10)))
+            methods.append("visit")
+            args.append([url])
+        elif choice < 0.75:
+            steps = rng.randint(1, 3)
+            methods.append("back")
+            args.append([steps])
+        else:
+            steps = rng.randint(1, 3)
+            methods.append("forward")
+            args.append([steps])
+    print(json.dumps(methods))
+    print(json.dumps(args))
+
+if __name__ == "__main__":
+    generate()
+```"""
+    else:
+        prompt = f"""You are an expert competitive programmer. Generate a Python test case generator for the following problem.
+
+Problem Description:
+{problem.problem_description}
+
+Methods:
+{methods_str}
+
+Variables (Input):
+{vars_str}
+{custom_types_section}
+RULES:
+- The generator reads an integer seed from stdin: seed = int(sys.stdin.readline().strip())
+- Create a random.Random(seed) instance for reproducibility
+- Generate ONE test case per invocation (each invocation gets a different seed)
+- The generated test cases MUST be valid — e.g., for Two Sum, ensure the target is the sum of two distinct array elements; for linked list problems, ensure the list is properly constructed
+- Print each variable value on its own line, in the order listed in Variables
+- Read the Constraints section from the Problem Description above. Every variable value must respect those constraints (e.g., if n is constrained 2 ≤ n ≤ 10⁴, generate n within that range)
+- For strings with specific allowed characters in the constraints: if the constraint says a variable "consists of" symbols without listing specific ones, only include these default symbols: , - . ; ' " ! ?. If specific symbols are explicitly listed (e.g., '+', '-', '.'), then include ONLY the listed ones. chars = string.ascii_letters + string.digits + " ,-.;'\\\"!?"; s = "".join(rng.choices(chars, k=rng.randint(0, 200))). If symbols include backslash, double-quote, [, or ] in the allowed set, escape them with a backslash in the Python string so they don't break the string literal or the formatted input (which uses [ ] and ").
+- Strings must be printed with double quotes around them (use json.dumps())
+- For arrays, print them as JSON using json.dumps()
+- For custom type objects, convert them to the input format expected by the runner (use the Custom Type Definitions above as a guide)
+- For plain integers/strings/floats, just print() them directly
+- Do NOT add unnecessary comments. Only add a single-line comment above each variable showing the variable range (e.g., # n: 2 to 10, target: -200 to 200)
+- Output NO explanations, NO markdown — ONLY the Python code. The code must have a generate() function and an if __name__ == "__main__": block.
+
+Example for Two Sum (twoSum(nums: array:integer, target: integer)):
+```python
+import random
+import json
+import sys
+
+def generate():
+    seed = int(sys.stdin.readline().strip())
+    rng = random.Random(seed)
+    n = rng.randint(2, 10)
+    nums = [rng.randint(-100, 100) for _ in range(n)]
+    i, j = rng.sample(range(n), 2)
+    target = nums[i] + nums[j]
+    print(json.dumps(nums))
+    print(target)
+
+if __name__ == "__main__":
+    generate()
+```"""
+
+    try:
+        content, provider = AIService.generate_with_fallback(prompt, ["gemini"])
+        content = AIService.clean_json_string(content)
+        # Save to problem model
+        problem.generator_code = content
+        problem.save(update_fields=["generator_code"])
+        return JsonResponse({"code": content, "provider": provider})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+import json as _json
+
+
+def save_generator_code(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid method"}, status=405)
+    try:
+        data = _json.loads(request.body)
+        problem_id = data.get("problem_id")
+        generator_code = data.get("generator_code", "")
+        if not problem_id:
+            return JsonResponse({"error": "Missing problem_id"}, status=400)
+        problem = Problem.objects.get(id=problem_id)
+        problem.generator_code = generator_code
+        problem.save(update_fields=["generator_code"])
+        return JsonResponse({"status": "ok"})
+    except Problem.DoesNotExist:
+        return JsonResponse({"error": "Problem not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@staff_member_required
+def generate_programmatic_async(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid method"}, status=405)
+
+    problem_id = request.POST.get("problem")
+    generator_code = request.POST.get("generator_code", "").strip()
+    generator_language = request.POST.get("generator_language", "PYTHON").strip()
+    solution_code = request.POST.get("solution_code", "").strip()
+    solution_language = request.POST.get("solution_language", "CPP").strip()
+    count = int(request.POST.get("count", 20))
+
+    if not generator_code or not solution_code:
+        return JsonResponse(
+            {"error": "Generator code and solution code are required"}, status=400
+        )
+
+    from problem.tasks import generate_testcases_programmatic_task
+
+    task = generate_testcases_programmatic_task.delay(
+        problem_id,
+        generator_code,
+        generator_language,
+        solution_code,
+        solution_language,
+        count,
+    )
+
+    return JsonResponse({"status": "pending", "task_id": task.id})

@@ -188,6 +188,11 @@ class Problem(models.Model):
         default="",
         help_text="Custom Python validator code. Must define 'validate(actual: str, expected: str, tc_input: str) -> bool'",
     )
+    generator_code = models.TextField(
+        blank=True,
+        default="",
+        help_text="Python test case generator script for programmatic generation",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

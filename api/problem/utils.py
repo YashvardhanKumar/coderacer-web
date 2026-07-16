@@ -12,6 +12,7 @@ IMPORT_BLOCKS = {
     CodingLanguage.JAVA: "import java.util.*;\nimport java.io.*;",
     CodingLanguage.PYTHON: (
         "import sys\n"
+        "import time\n"
         "import math\n"
         "import collections\n"
         "import itertools\n"

@@ -387,6 +387,7 @@ def run_batch_submission(base_payload, testcases, language_id=None):
                     "message": res.get("message") or "",
                     "time": res.get("time"),
                     "memory": res.get("memory"),
+                    "user_time_ms": 0,
                     "is_accepted": False,
                     "is_hidden": not (
                         hasattr(tc, "display_testcase") and tc.display_testcase
@@ -435,6 +436,13 @@ def run_batch_submission(base_payload, testcases, language_id=None):
             tc_id = getattr(tc, "id", i)
 
             block_text = actual_outputs[i]
+
+            # Extract user code execution time (nanoseconds, converted to ms)
+            user_time_ms = 0.0
+            time_marker_match = re.search(r"_TIME_(\d+)_", block_text)
+            if time_marker_match:
+                user_time_ms = int(time_marker_match.group(1)) / 1_000_000
+                block_text = re.sub(r"_TIME_\d+_[\r\n]*", "", block_text)
 
             # Extract user prints and clean output
             pattern = r"_USER_PRINT_START_[\r\n]*(.*?)[\r\n]*_USER_PRINT_END_[\r\n]*"
@@ -495,6 +503,7 @@ def run_batch_submission(base_payload, testcases, language_id=None):
                     "message": res.get("message") or "",
                     "time": res.get("time"),
                     "memory": res.get("memory"),
+                    "user_time_ms": round(user_time_ms, 3),
                     "is_accepted": is_accepted,
                     "is_hidden": not is_display,
                     "case_id": tc_id,
@@ -520,6 +529,7 @@ def run_batch_submission(base_payload, testcases, language_id=None):
                 "status": {"id": 13, "description": "Internal Error"},
                 "message": str(e),
                 "is_accepted": False,
+                "user_time_ms": 0,
                 "is_hidden": not (
                     hasattr(tc, "display_testcase") and tc.display_testcase
                     if hasattr(tc, "display_testcase")

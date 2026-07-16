@@ -386,7 +386,7 @@ def test_generate_testcases_task_normalization(monkeypatch):
         block="class BrowserHistory {}",
     )
 
-    from ai.models import TaskLog
+    from engine.models import TaskLog
 
     # Mock task request id
     generate_testcases_task.request.id = "test-task-123"
