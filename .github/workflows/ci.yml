@@ -126,50 +126,24 @@ jobs:
           # Use optimized build flags for CI environment
           DOCKER_TARGET=production NODE_ENV=production docker compose build web
 
-  deploy:
+  deploy-gcp:
     needs: [lint-and-test, docker-build-check]
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get Runner IP
-        id: ip
-        run: echo "ipv4=$(curl -s https://api.ipify.org)" >> $GITHUB_OUTPUT
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1 # Updated to Mumbai region
-
-      - name: Whitelist Runner IP
-        run: |
-          aws ec2 authorize-security-group-ingress \
-            --group-id ${{ secrets.AWS_SG_ID }} \
-            --protocol tcp \
-            --port 22 \
-            --cidr ${{ steps.ip.outputs.ipv4 }}/32
-
-      - name: Deploy to EC2
+      - name: Deploy to GCP VM via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets.GCP_VM_HOST }}
+          username: ${{ secrets.GCP_VM_USERNAME }}
+          key: ${{ secrets.GCP_VM_SSH_KEY }}
+          passphrase: ${{ secrets.GCP_VM_SSH_PASSPHRASE }}
           command_timeout: 20m
           script: |
-            cd coderacer-web
-            git pull origin master
+            cd ~/coderacer-web
+            git pull origin master || git pull origin main
             chmod +x scripts/optimize-deploy.sh
             ./scripts/optimize-deploy.sh
-
-      - name: Revoke Runner IP
-        if: always()
-        run: |
-          aws ec2 revoke-security-group-ingress \
-            --group-id ${{ secrets.AWS_SG_ID }} \
-            --protocol tcp \
-            --port 22 \
-            --cidr ${{ steps.ip.outputs.ipv4 }}/32
+            cd ~/coderacer-web && sudo docker compose up -d --force-recreate nginx
