@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI/CD Pipeline
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
     branches: [ main, master ]
   release:
     types: [ published ]
+  workflow_dispatch:
 
 jobs:
   lint-and-test:
@@ -127,8 +128,9 @@ jobs:
           DOCKER_TARGET=production NODE_ENV=production docker compose build web
 
   deploy-gcp:
+    name: Deploy to GCP Compute Engine
     needs: [lint-and-test, docker-build-check]
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: (github.event_name == 'release' && github.event.action == 'published') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
