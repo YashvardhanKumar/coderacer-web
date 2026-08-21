@@ -128,7 +128,7 @@ jobs:
 
   deploy-gcp:
     needs: [lint-and-test, docker-build-check]
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push'
+    if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
