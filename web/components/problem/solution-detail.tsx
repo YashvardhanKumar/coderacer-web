@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Discuss, Comment, User } from '@/lib/models'
 import { apiFetch, formatInUserTimezone } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
@@ -47,6 +47,20 @@ export default function SolutionDetail({
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [replyingTo, setReplyingTo] = useState<number | null>(null)
 
+  const totalCommentsCount = useMemo(() => {
+    const countTree = (list: Comment[]): number => {
+      return list.reduce(
+        (acc, c) => acc + 1 + (c.replies ? countTree(c.replies) : 0),
+        0
+      )
+    }
+    const treeCount = countTree(comments)
+    if (treeCount > 0) return treeCount
+    if (typeof solution.comment_count === 'number')
+      return solution.comment_count
+    return 0
+  }, [comments, solution.comment_count])
+
   useEffect(() => {
     // Fetch fresh detail with comments and views incremented
     async function fetchDetail() {
@@ -76,10 +90,14 @@ export default function SolutionDetail({
         }
       )
       if (response.ok) {
-        // Refresh detail to get new counts
-        const detailRes = await apiFetch(`discussions/${solution.id}/`)
-        const data = await detailRes.json()
-        setSolution(data)
+        const data = await response.json()
+        setSolution((prev) => ({
+          ...prev,
+          upvote_count: data.upvote_count ?? prev.upvote_count,
+          downvote_count: data.downvote_count ?? prev.downvote_count,
+          has_upvoted: data.has_upvoted ?? false,
+          has_downvoted: data.has_downvoted ?? false,
+        }))
       }
     } catch (err) {
       toast.error('Failed to vote')
@@ -134,19 +152,112 @@ export default function SolutionDetail({
     }
   }
 
+  const handleVoteComment = async (commentId: number, type: 'up' | 'down') => {
+    if (!currentUser) {
+      toast.error('Please sign in to vote on comments')
+      return
+    }
+
+    const updateTree = (list: Comment[]): Comment[] => {
+      return list.map((c) => {
+        if (c.id === commentId) {
+          const wasUp = !!c.has_upvoted
+          const wasDown = !!c.has_downvoted
+          let upCount = c.upvote_count ?? 0
+          let downCount = c.downvote_count ?? 0
+          let newUp = wasUp
+          let newDown = wasDown
+
+          if (type === 'up') {
+            if (wasUp) {
+              newUp = false
+              upCount = Math.max(0, upCount - 1)
+            } else {
+              newUp = true
+              upCount += 1
+              if (wasDown) {
+                newDown = false
+                downCount = Math.max(0, downCount - 1)
+              }
+            }
+          } else {
+            if (wasDown) {
+              newDown = false
+              downCount = Math.max(0, downCount - 1)
+            } else {
+              newDown = true
+              downCount += 1
+              if (wasUp) {
+                newUp = false
+                upCount = Math.max(0, upCount - 1)
+              }
+            }
+          }
+
+          return {
+            ...c,
+            upvote_count: upCount,
+            downvote_count: downCount,
+            has_upvoted: newUp,
+            has_downvoted: newDown,
+          }
+        }
+        if (c.replies && c.replies.length > 0) {
+          return { ...c, replies: updateTree(c.replies) }
+        }
+        return c
+      })
+    }
+
+    setComments((prev) => updateTree(prev))
+
+    try {
+      const response = await apiFetch(
+        `discussions/comment/${commentId}/vote/`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ type }),
+        }
+      )
+      if (response.ok) {
+        const data = await response.json()
+        const syncTree = (list: Comment[]): Comment[] => {
+          return list.map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                upvote_count: data.upvote_count,
+                downvote_count: data.downvote_count,
+                has_upvoted: data.has_upvoted,
+                has_downvoted: data.has_downvoted,
+              }
+            }
+            if (c.replies && c.replies.length > 0) {
+              return { ...c, replies: syncTree(c.replies) }
+            }
+            return c
+          })
+        }
+        setComments((prev) => syncTree(prev))
+      }
+    } catch {
+      toast.error('Failed to vote on comment')
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="absolute inset-0 bg-background-dark z-[70] flex flex-col overflow-hidden"
+      className="absolute inset-0 bg-background-dark z-50 flex flex-col overflow-hidden"
     >
       {/* Header */}
-      <div className="h-12 border-b border-surface-border flex items-center justify-between px-4 bg-surface-dark shrink-0">
+      <div className="h-12 border-b border-surface-border flex items-center justify-between px-6 bg-surface-dark/50 shrink-0">
         <div className="flex items-center gap-3">
           <Badge
             variant="secondary"
-            className="bg-primary/10 text-primary text-[10px] uppercase font-bold"
+            className="bg-primary/20 text-primary border-none text-[10px] uppercase font-bold tracking-wider"
           >
             Solution
           </Badge>
@@ -169,7 +280,13 @@ export default function SolutionDetail({
             <div className="flex gap-4">
               <Avatar className="size-12 rounded-xl border border-surface-border">
                 <AvatarImage
-                  src={solution.author.profile_picture_url ?? undefined}
+                  src={
+                    solution.author?.profile_picture_url ||
+                    (solution.author as any)?.profile_picture ||
+                    (solution as any).user?.profile_picture_url ||
+                    (solution as any).user?.profile_picture ||
+                    undefined
+                  }
                 />
                 <AvatarFallback className="bg-surface-border text-gray-400">
                   <UserIcon size={24} />
@@ -177,11 +294,17 @@ export default function SolutionDetail({
               </Avatar>
               <div>
                 <h3 className="font-bold text-white">
-                  {solution.author.username}
+                  {solution.author?.name ||
+                    solution.author?.username ||
+                    (solution as any).user?.name ||
+                    (solution as any).user?.username ||
+                    'Anonymous'}
                 </h3>
                 <p className="text-xs text-gray-500">
                   Posted on{' '}
-                  {formatInUserTimezone(solution.created_at, 'MMMM d, yyyy')}
+                  {solution.created_at
+                    ? formatInUserTimezone(solution.created_at, 'MMMM d, yyyy')
+                    : 'recently'}
                 </p>
               </div>
             </div>
@@ -225,7 +348,6 @@ export default function SolutionDetail({
                   )
                 },
                 p: ({ children }) => {
-                  // Basic @mention highlighting (mock, clicking opens profile)
                   const content = Array.isArray(children)
                     ? children
                     : [children]
@@ -297,10 +419,10 @@ export default function SolutionDetail({
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <MessageSquare size={20} className="text-primary" />
-              Comments ({solution.comment_count})
+              Comments ({totalCommentsCount})
             </h3>
 
-            {/* Post Comment */}
+            {/* Main Comment Input */}
             <div className="flex gap-4">
               <Avatar className="size-8 rounded-lg border border-surface-border shrink-0">
                 <AvatarImage
@@ -312,15 +434,15 @@ export default function SolutionDetail({
               </Avatar>
               <div className="flex-1 space-y-2">
                 <textarea
-                  placeholder="Write a comment..."
-                  className="w-full bg-surface-dark border border-surface-border rounded-xl p-3 text-sm text-gray-300 focus:outline-none focus:border-primary min-h-[80px] resize-none"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Type comment here... (Markdown supported)"
+                  className="w-full bg-surface-dark border border-surface-border rounded-xl p-3 text-sm text-gray-300 focus:outline-none focus:border-primary min-h-[80px] resize-none"
                 />
                 <div className="flex justify-end">
                   <Button
                     size="sm"
-                    className="bg-primary hover:bg-primary/90 gap-2"
+                    className="gap-2 bg-primary hover:bg-primary/90"
                     onClick={() => handleSubmitComment()}
                     disabled={isSubmittingComment || !newComment.trim()}
                   >
@@ -346,6 +468,7 @@ export default function SolutionDetail({
                   onCancelReply={() => setReplyingTo(null)}
                   onSubmitReply={() => handleSubmitComment(comment.id)}
                   isSubmitting={isSubmittingComment}
+                  onVote={(type) => handleVoteComment(comment.id, type)}
                 />
               ))}
             </div>
@@ -363,6 +486,7 @@ function CommentItem({
   onCancelReply,
   onSubmitReply,
   isSubmitting,
+  onVote,
 }: {
   comment: Comment
   onReply: () => void
@@ -370,12 +494,19 @@ function CommentItem({
   onCancelReply: () => void
   onSubmitReply: () => void
   isSubmitting: boolean
+  onVote: (type: 'up' | 'down') => void
 }) {
   return (
     <div className="group space-y-4">
       <div className="flex gap-4">
         <Avatar className="size-8 rounded-lg border border-surface-border shrink-0">
-          <AvatarImage src={comment.author.profile_picture_url ?? undefined} />
+          <AvatarImage
+            src={
+              comment.author?.profile_picture_url ||
+              (comment.author as any)?.profile_picture ||
+              undefined
+            }
+          />
           <AvatarFallback className="bg-surface-border text-gray-400">
             <UserIcon size={16} />
           </AvatarFallback>
@@ -383,10 +514,15 @@ function CommentItem({
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-white">
-              {comment.author.username}
+              {comment.author?.name ||
+                comment.author?.username ||
+                (comment as any).user?.username ||
+                'Anonymous'}
             </span>
             <span className="text-[10px] text-gray-600">
-              {formatInUserTimezone(comment.created_at, 'MMM d, yyyy')}
+              {comment.created_at
+                ? formatInUserTimezone(comment.created_at, 'MMM d, yyyy')
+                : ''}
             </span>
           </div>
           <p className="text-sm text-gray-300 leading-relaxed">
@@ -400,11 +536,27 @@ function CommentItem({
               <Reply size={12} /> Reply
             </button>
             <div className="flex items-center gap-3">
-              <button className="text-[10px] font-bold text-gray-500 hover:text-primary transition-colors flex items-center gap-1">
-                <ThumbsUp size={12} /> {comment.upvote_count}
+              <button
+                onClick={() => onVote('up')}
+                className={`text-[10px] font-bold transition-colors flex items-center gap-1 ${
+                  comment.has_upvoted
+                    ? 'text-primary'
+                    : 'text-gray-500 hover:text-primary'
+                }`}
+                title="Upvote comment"
+              >
+                <ThumbsUp size={12} /> {comment.upvote_count ?? 0}
               </button>
-              <button className="text-[10px] font-bold text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1">
-                <ThumbsDown size={12} /> {comment.downvote_count}
+              <button
+                onClick={() => onVote('down')}
+                className={`text-[10px] font-bold transition-colors flex items-center gap-1 ${
+                  comment.has_downvoted
+                    ? 'text-red-500'
+                    : 'text-gray-500 hover:text-red-500'
+                }`}
+                title="Downvote comment"
+              >
+                <ThumbsDown size={12} /> {comment.downvote_count ?? 0}
               </button>
             </div>
           </div>
@@ -421,9 +573,15 @@ function CommentItem({
                 <div className="flex flex-col gap-2">
                   <textarea
                     id={`reply-input-${comment.id}`}
-                    placeholder={`Reply to @${comment.author.username}...`}
+                    placeholder={`Reply to @${
+                      comment.author?.username || 'user'
+                    }...`}
                     className="w-full bg-surface-dark border border-surface-border rounded-lg p-2 text-xs text-gray-300 focus:outline-none focus:border-primary min-h-[60px] resize-none"
-                    defaultValue={`@${comment.author.username} `}
+                    defaultValue={
+                      comment.author?.username
+                        ? `@${comment.author.username} `
+                        : ''
+                    }
                   />
                   <div className="flex justify-end gap-2">
                     <Button
@@ -465,6 +623,7 @@ function CommentItem({
               onCancelReply={() => {}}
               onSubmitReply={() => {}}
               isSubmitting={false}
+              onVote={onVote}
             />
           ))}
         </div>

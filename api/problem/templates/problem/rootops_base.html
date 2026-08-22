@@ -37,6 +37,9 @@
                 <li class="{% if request.resolver_match.url_name == 'rootops' %}active{% endif %}">
                     <a href="{% url 'rootops' %}"><i class="fas fa-tachometer-alt"></i> Dashboard Home</a>
                 </li>
+                <li class="{% if request.resolver_match.url_name == 'set_contest' or request.resolver_match.url_name == 'set_contest_edit' %}active{% endif %}">
+                    <a href="{% url 'set_contest' %}"><i class="fas fa-trophy"></i> Set Contest Questions</a>
+                </li>
                 <li class="{% if request.resolver_match.url_name == 'add_problem_custom' %}active{% endif %}">
                     <a href="{% url 'add_problem_custom' %}"><i class="fas fa-plus"></i> Add a Problem</a>
                 </li>

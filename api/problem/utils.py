@@ -233,3 +233,61 @@ def assemble_full_code(problem, language, user_code):
     ]
 
     return "\n\n".join(parts)
+
+
+def record_active_problem_user(problem_id: int, user_id: str) -> int:
+    """
+    Record an active user on a problem using cache with sliding window.
+    Returns the number of active users on this problem in the last 60 seconds.
+    """
+    import time
+    from django.core.cache import cache
+
+    cache_key = f"active_problem_users_{problem_id}"
+    now = time.time()
+
+    active_dict = cache.get(cache_key, {})
+    if not isinstance(active_dict, dict):
+        active_dict = {}
+
+    # Prune users inactive for more than 60 seconds
+    active_dict = {uid: ts for uid, ts in active_dict.items() if now - ts < 60}
+    active_dict[user_id] = now
+
+    cache.set(cache_key, active_dict, timeout=120)
+    return len(active_dict)
+
+
+def get_active_problem_users_count(problem_id: int) -> int:
+    """
+    Returns the count of active users on a problem. Defaults to at least 1 when active.
+    """
+    import time
+    from django.core.cache import cache
+
+    cache_key = f"active_problem_users_{problem_id}"
+    now = time.time()
+
+    active_dict = cache.get(cache_key, {})
+    if not isinstance(active_dict, dict):
+        return 1
+
+    active_dict = {uid: ts for uid, ts in active_dict.items() if now - ts < 60}
+    return max(1, len(active_dict))
+
+
+def should_count_view(
+    target_key: str, user_id: str, cooldown_seconds: int = 1800
+) -> bool:
+    """
+    Check if a view should be counted for a target (e.g. problem_1, discuss_2) by a user/IP.
+    Prevents view counts from inflating on every refresh or like/dislike action within cooldown.
+    """
+    from django.core.cache import cache
+
+    cache_key = f"viewed:{target_key}:{user_id}"
+    if cache.get(cache_key):
+        return False
+
+    cache.set(cache_key, True, timeout=cooldown_seconds)
+    return True

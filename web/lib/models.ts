@@ -163,9 +163,18 @@ export interface Problem {
   codeblocks: Codeblock[]
   testcases: TestcaseList[]
   variables: Variable[]
-  created_at: string
+  views?: number
+  likes_count?: number
+  dislikes_count?: number
+  has_liked?: boolean
+  has_disliked?: boolean
+  is_favorited?: boolean
+  active_users?: number
+  created_at?: string
   is_multi?: boolean
-  success_rate: string
+  success_rate?: string
+  total_solutions?: number
+  total_testcases?: number
 }
 
 export interface ProblemList {
@@ -275,7 +284,9 @@ export interface ProfileProblemSummary {
   id: number
   name: string
   difficulty: Difficulty
-  last_submitted_at: string
+  last_submitted_at?: string
+  created_at?: string
+  tags?: string[]
 }
 
 export interface ProfileSubmission {
@@ -313,6 +324,33 @@ export interface ProfileStats {
   status_breakdown: Record<string, number>
 }
 
+export interface ProfileProblemDiscussion {
+  id: number
+  problem_id: number
+  problem_name: string
+  problem_difficulty: Difficulty
+  title: string
+  views: number
+  upvotes_count: number
+  downvotes_count: number
+  is_editorial: boolean
+  created_at: string
+}
+
+export interface ProfileGeneralDiscussion {
+  id: number
+  title: string
+  category: string
+  category_display: string
+  views: number
+  upvotes_count: number
+  downvotes_count: number
+  vote_count: number
+  comments_count: number
+  tags: string[]
+  created_at: string
+}
+
 export interface UserProfile {
   user: User
   stats: ProfileStats
@@ -320,6 +358,162 @@ export interface UserProfile {
   recent_submissions: ProfileSubmission[]
   solved_problems: ProfileProblemSummary[]
   attempted_problems: ProfileProblemSummary[]
+  favorite_problems?: ProfileProblemSummary[]
+  problem_discussions?: ProfileProblemDiscussion[]
+  general_discussions?: ProfileGeneralDiscussion[]
   available_years: number[]
   selected_year: number
+}
+
+// ============================================================================
+// CONTEST INTERFACES
+// ============================================================================
+
+export type ContestStatus = 'UPCOMING' | 'ONGOING' | 'PAST'
+
+export interface ContestProblemSummary {
+  id: number
+  problem_id: number
+  order: number
+  points: number
+  name: string
+  difficulty: Difficulty
+  user_status: 'done' | 'attempted' | 'pending'
+  attempted_count?: number
+  submitted_count?: number
+  accepted_count?: number
+}
+
+export interface Contest {
+  id: number
+  title: string
+  slug: string
+  description: string
+  is_weekly: boolean
+  start_time: string
+  duration_minutes: number
+  end_time: string
+  status: ContestStatus
+  is_published: boolean
+  registered_count: number
+  is_registered: boolean
+  total_problems?: number
+  problems?: ContestProblemSummary[]
+  user_score?: number
+  user_rank?: number | null
+}
+
+export interface ContestLeaderboardEntry {
+  rank: number
+  user_id: number
+  username: string
+  name: string | null
+  profile_picture: string
+  score: number
+  penalty_seconds: number
+  finish_time_seconds: number
+  problems_solved: number
+  problem_details: Record<
+    string,
+    {
+      status: string
+      wrong_attempts: number
+      time_seconds: number
+      points: number
+    }
+  >
+  updated_at: string
+}
+
+export interface ContestLeaderboardResponse {
+  contest_id: number
+  contest_title: string
+  contest_status: ContestStatus
+  total_participants: number
+  leaderboard: ContestLeaderboardEntry[]
+  user_ranking?: ContestLeaderboardEntry | null
+}
+
+export interface ContestProblemDetail {
+  id: number
+  contest_id: number
+  contest_title: string
+  contest_status: ContestStatus
+  contest_start_time: string
+  contest_end_time: string
+  problem_id: number
+  order: number
+  points: number
+  name: string
+  problem_description: string
+  difficulty: Difficulty
+  codeblocks: Codeblock[]
+  testcases: TestcaseList[]
+  variables: Variable[]
+  user_status: 'done' | 'attempted' | 'pending'
+  attempted_count: number
+  submitted_count: number
+  accepted_count: number
+  prev_problem_id: number | null
+  next_problem_id: number | null
+  contest_problems: ContestProblemSummary[]
+}
+
+export type DiscussCategoryType =
+  | 'ALL'
+  | 'GENERAL'
+  | 'INTERVIEW_EXPERIENCE'
+  | 'INTERVIEW_QUESTION'
+  | 'CAREER'
+  | 'COMPENSATION'
+  | 'FEEDBACK'
+
+export interface DiscussCategoryItem {
+  id: DiscussCategoryType
+  label: string
+  count: number
+}
+
+export interface DiscussAuthor {
+  id: number
+  username: string
+  name: string
+  profile_picture?: string | null
+}
+
+export interface DiscussComment {
+  id: number
+  post?: number
+  author: DiscussAuthor
+  parent: number | null
+  content: string
+  upvotes_count: number
+  downvotes_count: number
+  vote_count: number
+  user_vote: 1 | -1 | 0
+  replies: DiscussComment[]
+  created_at: string
+  updated_at: string
+}
+
+export interface DiscussPost {
+  id: number
+  author: DiscussAuthor
+  title: string
+  category: DiscussCategoryType
+  category_display: string
+  content_preview: string
+  tags: string[]
+  views: number
+  vote_count: number
+  comments_count: number
+  pinned: boolean
+  user_vote: 1 | -1 | 0
+  created_at: string
+  updated_at: string
+}
+
+export interface DiscussPostDetail extends DiscussPost {
+  content: string
+  comments: DiscussComment[]
 }

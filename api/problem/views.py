@@ -155,6 +155,104 @@ class ProblemViewSet(viewsets.ModelViewSet):
             return ProblemListSerializer
         return ProblemDetailSerializer
 
+    def retrieve(self, request, *args, **kwargs):
+        from .utils import record_active_problem_user, should_count_view
+
+        instance = self.get_object()
+        user_id = (
+            f"user_{request.user.id}"
+            if request.user.is_authenticated
+            else f"anon_{request.session.session_key or request.META.get('REMOTE_ADDR', 'ip')}"
+        )
+
+        # Deduplicate view count per user/session cooldown
+        if should_count_view(f"problem_{instance.pk}", user_id):
+            Problem.objects.filter(pk=instance.pk).update(views=F("views") + 1)
+            instance.refresh_from_db(fields=["views"])
+
+        record_active_problem_user(instance.pk, user_id)
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    def vote(self, request, pk=None):
+        problem = self.get_object()
+        vote_type = request.data.get("type", "up")
+        user = request.user
+
+        if vote_type == "up":
+            if problem.upvotes.filter(id=user.id).exists():
+                problem.upvotes.remove(user)
+                has_liked = False
+            else:
+                problem.upvotes.add(user)
+                problem.downvotes.remove(user)
+                has_liked = True
+            has_disliked = False
+        elif vote_type == "down":
+            if problem.downvotes.filter(id=user.id).exists():
+                problem.downvotes.remove(user)
+                has_disliked = False
+            else:
+                problem.downvotes.add(user)
+                problem.upvotes.remove(user)
+                has_disliked = True
+            has_liked = False
+        else:
+            return Response(
+                {"error": "Invalid vote type. Must be 'up' or 'down'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "likes_count": problem.upvotes.count(),
+                "dislikes_count": problem.downvotes.count(),
+                "has_liked": has_liked,
+                "has_disliked": has_disliked,
+            }
+        )
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    def favorite(self, request, pk=None):
+        problem = self.get_object()
+        user = request.user
+
+        if problem.favorited_by.filter(id=user.id).exists():
+            problem.favorited_by.remove(user)
+            is_favorited = False
+        else:
+            problem.favorited_by.add(user)
+            is_favorited = True
+
+        return Response(
+            {
+                "is_favorited": is_favorited,
+                "favorites_count": problem.favorited_by.count(),
+            }
+        )
+
+    @action(detail=True, methods=["post", "get"])
+    def heartbeat(self, request, pk=None):
+        from .utils import record_active_problem_user
+
+        problem = self.get_object()
+        user_id = (
+            f"user_{request.user.id}"
+            if request.user.is_authenticated
+            else f"anon_{request.session.session_key or request.META.get('REMOTE_ADDR', 'ip')}"
+        )
+        active_count = record_active_problem_user(problem.pk, user_id)
+        return Response(
+            {
+                "active_users": active_count,
+                "views": problem.views,
+                "likes_count": problem.upvotes.count(),
+                "dislikes_count": problem.downvotes.count(),
+            }
+        )
+
     @action(detail=True, methods=["get"])
     def statistics(self, request, pk=None):
         """Get statistics for a specific problem"""
@@ -458,9 +556,18 @@ class DiscussViewSet(viewsets.ModelViewSet):
         return queryset
 
     def retrieve(self, request, *args, **kwargs):
+        from .utils import should_count_view
+
         instance = self.get_object()
-        # Increment views
-        Discuss.objects.filter(pk=instance.pk).update(views=F("views") + 1)
+        user_id = (
+            f"user_{request.user.id}"
+            if request.user.is_authenticated
+            else f"anon_{request.session.session_key or request.META.get('REMOTE_ADDR', 'ip')}"
+        )
+        if should_count_view(f"discuss_{instance.pk}", user_id):
+            Discuss.objects.filter(pk=instance.pk).update(views=F("views") + 1)
+            instance.refresh_from_db(fields=["views"])
+
         return super().retrieve(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
@@ -509,11 +616,21 @@ class DiscussViewSet(viewsets.ModelViewSet):
         user = request.user
         if discuss.upvotes.filter(id=user.id).exists():
             discuss.upvotes.remove(user)
-            return Response({"status": "upvote removed"})
+            has_upvoted = False
         else:
             discuss.upvotes.add(user)
             discuss.downvotes.remove(user)  # Remove downvote if exists
-            return Response({"status": "upvoted"})
+            has_upvoted = True
+
+        return Response(
+            {
+                "status": "upvoted" if has_upvoted else "upvote removed",
+                "upvote_count": discuss.upvotes.count(),
+                "downvote_count": discuss.downvotes.count(),
+                "has_upvoted": has_upvoted,
+                "has_downvoted": False,
+            }
+        )
 
     @action(detail=True, methods=["post"])
     def downvote(self, request, pk=None):
@@ -521,11 +638,21 @@ class DiscussViewSet(viewsets.ModelViewSet):
         user = request.user
         if discuss.downvotes.filter(id=user.id).exists():
             discuss.downvotes.remove(user)
-            return Response({"status": "downvote removed"})
+            has_downvoted = False
         else:
             discuss.downvotes.add(user)
             discuss.upvotes.remove(user)  # Remove upvote if exists
-            return Response({"status": "downvoted"})
+            has_downvoted = True
+
+        return Response(
+            {
+                "status": "downvoted" if has_downvoted else "downvote removed",
+                "upvote_count": discuss.upvotes.count(),
+                "downvote_count": discuss.downvotes.count(),
+                "has_upvoted": False,
+                "has_downvoted": has_downvoted,
+            }
+        )
 
     @action(detail=True, methods=["post"])
     def add_comment(self, request, pk=None):
@@ -572,7 +699,16 @@ class DiscussViewSet(viewsets.ModelViewSet):
                 comment.downvotes.add(user)
                 comment.upvotes.remove(user)
 
-        return Response({"status": "voted"})
+        return Response(
+            {
+                "status": "voted",
+                "comment_id": comment.id,
+                "upvote_count": comment.upvotes.count(),
+                "downvote_count": comment.downvotes.count(),
+                "has_upvoted": comment.upvotes.filter(id=user.id).exists(),
+                "has_downvoted": comment.downvotes.filter(id=user.id).exists(),
+            }
+        )
 
     @action(detail=False, methods=["get"])
     def my_discussions(self, request):

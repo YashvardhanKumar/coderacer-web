@@ -24,6 +24,7 @@ from problem.admin_views import (
     generate_generator_code_ai,
     save_generator_code,
 )
+from contest.admin_views import set_contest
 from ai.views import TaskStatusView
 from django.conf import settings
 from django.conf.urls.static import static
@@ -38,6 +39,12 @@ urlpatterns = [
         include(
             [
                 path("", rootops, name="rootops"),
+                path("set-contest/", set_contest, name="set_contest"),
+                path(
+                    "set-contest/<int:contest_id>/",
+                    set_contest,
+                    name="set_contest_edit",
+                ),
                 path("add-problem/", add_problem_custom, name="add_problem_custom"),
                 path("add-testcase/", add_testcase_custom, name="add_testcase_custom"),
                 path(
@@ -92,6 +99,8 @@ urlpatterns = [
     path("api/engine/", include("engine.urls")),
     path("api/ai/", include("ai.urls")),
     path("api/", include("problem.urls")),
+    path("api/", include("contest.urls")),
+    path("api/", include("discuss.urls")),
     # Documentation & Schema
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

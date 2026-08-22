@@ -1,7 +1,5 @@
-// components/problem/ProblemDescription.tsx
-'use client'
-
 import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import TabButton from '@/components/tab-button'
 import DifficultyBadge from '@/components/difficulty-badge'
 import CodeBlock from '@/components/code-block'
@@ -18,7 +16,19 @@ import Script from 'next/script'
 import { useAuth } from '@/components/auth-provider'
 import useSWR from 'swr'
 import { SubmissionSkeleton } from '@/components/loader'
-import { CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react'
+import {
+  CheckCircle2,
+  XCircle,
+  Clock,
+  AlertCircle,
+  ThumbsUp,
+  ThumbsDown,
+  Eye,
+  MessageSquare,
+  Star,
+  Share2,
+  Users,
+} from 'lucide-react'
 import Link from 'next/link'
 import { apiFetcher, formatInUserTimezone } from '@/lib/utils'
 import SubmissionResult from './submission-result'
@@ -27,6 +37,7 @@ import { apiFetch } from '@/lib/utils'
 import EditorialTab from './editorial-tab'
 import SolutionsTab from './solutions-tab'
 import SolutionDetail from './solution-detail'
+import { toast } from 'sonner'
 
 declare global {
   interface Window {
@@ -47,6 +58,15 @@ interface Props {
   onMaximize?: () => void
   onRestore?: () => void
   ref?: React.Ref<ImperativePanelHandle>
+  isContestMode?: boolean
+  contestInfo?: {
+    contest_id: number
+    order?: number
+    points?: number
+    attempted_count?: number
+    submitted_count?: number
+    accepted_count?: number
+  }
 }
 
 function ProblemDescription({
@@ -55,8 +75,24 @@ function ProblemDescription({
   onMaximize,
   onRestore,
   ref,
+  isContestMode = false,
+  contestInfo,
 }: Props) {
-  const [activeTab, setActiveTab] = useState('description')
+  const searchParams = useSearchParams()
+  const tabParam = searchParams?.get('tab')
+  const submissionIdParam = searchParams?.get('submissionId')
+  const discussionIdParam = searchParams?.get('discussionId')
+
+  const [activeTab, setActiveTab] = useState(
+    tabParam &&
+      ['description', 'editorial', 'solutions', 'submissions'].includes(
+        tabParam
+      )
+      ? tabParam
+      : discussionIdParam
+        ? 'solutions'
+        : 'description'
+  )
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<
     number | null
   >(null)
@@ -70,6 +106,211 @@ function ProblemDescription({
   const { data: submissionsData } = useSWR<
     PaginatedResponse<Solution> | Solution[]
   >(user ? `solutions/?problem_id=${problem.id}` : null, apiFetcher)
+
+  const { data: discussionsData } = useSWR<any>(
+    !isContestMode ? `discussions/?problem_id=${problem.id}` : null,
+    apiFetcher
+  )
+
+  const discussionsCount = useMemo(() => {
+    if (Array.isArray(discussionsData)) return discussionsData.length
+    if (typeof discussionsData?.count === 'number') return discussionsData.count
+    if (Array.isArray(discussionsData?.results))
+      return discussionsData.results.length
+    return 0
+  }, [discussionsData])
+
+  const [likeCount, setLikeCount] = useState(problem.likes_count ?? 0)
+  const [hasLiked, setHasLiked] = useState(!!problem.has_liked)
+  const [dislikeCount, setDislikeCount] = useState(problem.dislikes_count ?? 0)
+  const [hasDisliked, setHasDisliked] = useState(!!problem.has_disliked)
+  const [viewsCount, setViewsCount] = useState(problem.views ?? 1)
+  const [activeUsers, setActiveUsers] = useState(problem.active_users ?? 1)
+  const [isStarred, setIsStarred] = useState(!!problem.is_favorited)
+  const [isVoting, setIsVoting] = useState(false)
+
+  // Sync state when problem props update
+  useEffect(() => {
+    if (problem) {
+      if (typeof problem.likes_count === 'number')
+        setLikeCount(problem.likes_count)
+      if (typeof problem.has_liked === 'boolean') setHasLiked(problem.has_liked)
+      if (typeof problem.dislikes_count === 'number')
+        setDislikeCount(problem.dislikes_count)
+      if (typeof problem.has_disliked === 'boolean')
+        setHasDisliked(problem.has_disliked)
+      if (typeof problem.views === 'number') setViewsCount(problem.views)
+      if (typeof problem.active_users === 'number')
+        setActiveUsers(problem.active_users)
+      if (typeof problem.is_favorited === 'boolean')
+        setIsStarred(problem.is_favorited)
+    }
+  }, [problem])
+
+  // Periodic active users and views heartbeat
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiFetch(`problems/${problem.id}/heartbeat/`, {
+          method: 'POST',
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (typeof data.active_users === 'number') {
+            setActiveUsers(data.active_users)
+          }
+          if (typeof data.views === 'number') {
+            setViewsCount(data.views)
+          }
+          if (typeof data.likes_count === 'number') {
+            setLikeCount(data.likes_count)
+          }
+          if (typeof data.dislikes_count === 'number') {
+            setDislikeCount(data.dislikes_count)
+          }
+        }
+      } catch {
+        // Silently ignore background heartbeat network errors
+      }
+    }, 30000)
+
+    return () => clearInterval(interval)
+  }, [problem.id])
+
+  const handleToggleLike = async () => {
+    if (!user) {
+      toast.error('Please sign in to vote on problems.')
+      return
+    }
+    if (isVoting) return
+
+    setIsVoting(true)
+    // Optimistic state
+    const prevLiked = hasLiked
+    const prevDisliked = hasDisliked
+    const prevLikeCount = likeCount
+    const prevDislikeCount = dislikeCount
+
+    if (hasLiked) {
+      setHasLiked(false)
+      setLikeCount((c) => Math.max(0, c - 1))
+    } else {
+      setHasLiked(true)
+      setLikeCount((c) => c + 1)
+      if (hasDisliked) {
+        setHasDisliked(false)
+        setDislikeCount((c) => Math.max(0, c - 1))
+      }
+    }
+
+    try {
+      const res = await apiFetch(`problems/${problem.id}/vote/`, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'up' }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setLikeCount(data.likes_count)
+        setDislikeCount(data.dislikes_count)
+        setHasLiked(data.has_liked)
+        setHasDisliked(data.has_disliked)
+      } else {
+        throw new Error('Vote failed')
+      }
+    } catch {
+      setHasLiked(prevLiked)
+      setHasDisliked(prevDisliked)
+      setLikeCount(prevLikeCount)
+      setDislikeCount(prevDislikeCount)
+      toast.error('Failed to update vote.')
+    } finally {
+      setIsVoting(false)
+    }
+  }
+
+  const handleToggleDislike = async () => {
+    if (!user) {
+      toast.error('Please sign in to vote on problems.')
+      return
+    }
+    if (isVoting) return
+
+    setIsVoting(true)
+    // Optimistic state
+    const prevLiked = hasLiked
+    const prevDisliked = hasDisliked
+    const prevLikeCount = likeCount
+    const prevDislikeCount = dislikeCount
+
+    if (hasDisliked) {
+      setHasDisliked(false)
+      setDislikeCount((c) => Math.max(0, c - 1))
+    } else {
+      setHasDisliked(true)
+      setDislikeCount((c) => c + 1)
+      if (hasLiked) {
+        setHasLiked(false)
+        setLikeCount((c) => Math.max(0, c - 1))
+      }
+    }
+
+    try {
+      const res = await apiFetch(`problems/${problem.id}/vote/`, {
+        method: 'POST',
+        body: JSON.stringify({ type: 'down' }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setLikeCount(data.likes_count)
+        setDislikeCount(data.dislikes_count)
+        setHasLiked(data.has_liked)
+        setHasDisliked(data.has_disliked)
+      } else {
+        throw new Error('Vote failed')
+      }
+    } catch {
+      setHasLiked(prevLiked)
+      setHasDisliked(prevDisliked)
+      setLikeCount(prevLikeCount)
+      setDislikeCount(prevDislikeCount)
+      toast.error('Failed to update vote.')
+    } finally {
+      setIsVoting(false)
+    }
+  }
+
+  const handleToggleStar = async () => {
+    if (!user) {
+      toast.error('Please sign in to save problems to your favorites.')
+      return
+    }
+
+    const prev = isStarred
+    setIsStarred(!prev)
+    toast.success(!prev ? 'Added to favorites list' : 'Removed from list')
+
+    try {
+      const res = await apiFetch(`problems/${problem.id}/favorite/`, {
+        method: 'POST',
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setIsStarred(data.is_favorited)
+      } else {
+        throw new Error('Favorite toggle failed')
+      }
+    } catch {
+      setIsStarred(prev)
+      toast.error('Failed to update favorites')
+    }
+  }
+
+  const handleShare = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href)
+      toast.success('Problem link copied to clipboard!')
+    }
+  }
 
   const history = useMemo(() => {
     const subs = Array.isArray(submissionsData)
@@ -99,6 +340,69 @@ function ProblemDescription({
     }
   }
 
+  const handleViewDiscussion = async (id: number) => {
+    setIsDetailLoading(true)
+    try {
+      const data = await apiFetch(`discussions/${id}/`)
+      if (data.ok) {
+        const json = await data.json()
+        setViewingSolution(json)
+      }
+    } catch (error) {
+      console.error('Error fetching discussion details:', error)
+    } finally {
+      setIsDetailLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (
+      tabParam &&
+      ['description', 'editorial', 'solutions', 'submissions'].includes(
+        tabParam
+      )
+    ) {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam])
+
+  useEffect(() => {
+    if (submissionIdParam && !isNaN(Number(submissionIdParam))) {
+      handleViewSubmission(Number(submissionIdParam))
+    }
+  }, [submissionIdParam])
+
+  useEffect(() => {
+    if (discussionIdParam && !isNaN(Number(discussionIdParam))) {
+      setActiveTab('solutions')
+      handleViewDiscussion(Number(discussionIdParam))
+    }
+  }, [discussionIdParam])
+
+  const router = useRouter()
+  const pathname = usePathname()
+
+  const handleCloseSubmission = () => {
+    setSelectedSubmission(null)
+    setSelectedSubmissionId(null)
+    setActiveTab('submissions')
+    const params = new URLSearchParams(searchParams?.toString() || '')
+    params.delete('submissionId')
+    params.set('tab', 'submissions')
+    const newQuery = params.toString() ? `?${params.toString()}` : ''
+    router.replace(`${pathname}${newQuery}`, { scroll: false })
+  }
+
+  const handleCloseDiscussion = () => {
+    setViewingSolution(null)
+    setActiveTab('solutions')
+    const params = new URLSearchParams(searchParams?.toString() || '')
+    params.delete('discussionId')
+    params.set('tab', 'solutions')
+    const newQuery = params.toString() ? `?${params.toString()}` : ''
+    router.replace(`${pathname}${newQuery}`, { scroll: false })
+  }
+
   return (
     <ResizablePanel
       ref={ref}
@@ -111,7 +415,7 @@ function ProblemDescription({
         {selectedSubmission && (
           <SubmissionResult
             solution={selectedSubmission}
-            onClose={() => setSelectedSubmission(null)}
+            onClose={handleCloseSubmission}
             testcases={problem.testcases}
             history={history}
           />
@@ -119,7 +423,7 @@ function ProblemDescription({
         {viewingSolution && (
           <SolutionDetail
             solution={viewingSolution}
-            onClose={() => setViewingSolution(null)}
+            onClose={handleCloseDiscussion}
             currentUser={user}
           />
         )}
@@ -152,7 +456,13 @@ function ProblemDescription({
       />
       {/* Tabs Header */}
       <div className="h-10 bg-surface-dark flex items-center px-2 gap-1 border-b border-surface-border shrink-0">
-        {tabs.map((tab) => (
+        {(isContestMode
+          ? [
+              { id: 'description', label: 'Description', icon: 'description' },
+              { id: 'submissions', label: 'Submissions', icon: 'history' },
+            ]
+          : tabs
+        ).map((tab) => (
           <TabButton
             key={tab.id}
             icon={tab.icon}
@@ -222,10 +532,16 @@ function ProblemDescription({
       {/* Content Scroll Area */}
       <div className="flex-1 overflow-y-auto p-5 pb-10">
         {activeTab === 'description' && (
-          <DescriptionContent problem={problem} />
+          <DescriptionContent
+            problem={problem}
+            isContestMode={isContestMode}
+            contestInfo={contestInfo}
+          />
         )}
-        {activeTab === 'editorial' && <EditorialTab problem={problem} />}
-        {activeTab === 'solutions' && (
+        {!isContestMode && activeTab === 'editorial' && (
+          <EditorialTab problem={problem} />
+        )}
+        {!isContestMode && activeTab === 'solutions' && (
           <SolutionsTab
             problem={problem}
             onViewSolution={(sol) => setViewingSolution(sol)}
@@ -240,21 +556,145 @@ function ProblemDescription({
         )}
       </div>
 
-      {/* Footer */}
-      <div className="w-full h-10 bg-surface-dark border-t border-surface-border flex items-center justify-between px-4 z-10 shrink-0">
-        <button className="text-gray-400 hover:text-white text-xs flex items-center gap-1">
-          <span className="material-symbols-outlined text-base">forum</span>
-          Discussion (32)
-        </button>
-        <span className="text-xs text-gray-600">
-          Copyright © 2025 Coderacer
-        </span>
+      {/* Footer (Flex layout, scrollable content above is flex-1) */}
+      <div className="w-full h-11 bg-surface-dark border-t border-surface-border flex items-center justify-between px-4 z-10 shrink-0 select-none">
+        {isContestMode ? (
+          <div className="text-gray-400 text-xs flex items-center gap-3">
+            <span>
+              Attempted:{' '}
+              <b className="text-gray-200">
+                {contestInfo?.attempted_count ?? 0}
+              </b>
+            </span>
+            <span className="text-gray-600">|</span>
+            <span>
+              Submitted:{' '}
+              <b className="text-gray-200">
+                {contestInfo?.submitted_count ?? 0}
+              </b>
+            </span>
+            <span className="text-gray-600">|</span>
+            <span className="text-emerald-400">
+              Accepted:{' '}
+              <b className="text-emerald-300">
+                {contestInfo?.accepted_count ?? 0}
+              </b>
+            </span>
+          </div>
+        ) : (
+          <>
+            {/* Left Actions: Like, Dislike, Views, Discussion */}
+            <div className="flex items-center gap-3.5">
+              <button
+                onClick={handleToggleLike}
+                className={`flex items-center gap-1 text-xs transition-colors ${
+                  hasLiked
+                    ? 'text-green-500 font-bold'
+                    : 'text-gray-400 hover:text-green-500'
+                }`}
+                title="Like Problem"
+              >
+                <ThumbsUp className="size-3.5" />
+                <span>{likeCount}</span>
+              </button>
+
+              <button
+                onClick={handleToggleDislike}
+                className={`flex items-center gap-1 text-xs transition-colors ${
+                  hasDisliked
+                    ? 'text-rose-500 font-bold'
+                    : 'text-gray-400 hover:text-rose-500'
+                }`}
+                title="Dislike Problem"
+              >
+                <ThumbsDown className="size-3.5" />
+                <span>{dislikeCount}</span>
+              </button>
+
+              <div
+                className="flex items-center gap-1 text-xs text-gray-400"
+                title="Total Views"
+              >
+                <Eye className="size-3.5 text-gray-500" />
+                <span>{viewsCount.toLocaleString()}</span>
+              </div>
+
+              {/* Active Users Badge */}
+              <div
+                className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full"
+                title={`${activeUsers} user${activeUsers === 1 ? '' : 's'} currently on this problem`}
+              >
+                <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <Users className="size-3 text-emerald-400" />
+                <span className="font-semibold text-[11px]">
+                  {activeUsers} online
+                </span>
+              </div>
+
+              <div className="h-3.5 w-px bg-surface-border" />
+
+              <button
+                onClick={() => setActiveTab('solutions')}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
+                title="View Discussions & Solutions"
+              >
+                <MessageSquare className="size-3.5" />
+                <span>
+                  Discussion{' '}
+                  {discussionsCount > 0 ? `(${discussionsCount})` : ''}
+                </span>
+              </button>
+            </div>
+
+            {/* Right Actions: Star, Share */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleToggleStar}
+                className={`flex items-center gap-1 text-xs transition-colors ${
+                  isStarred
+                    ? 'text-amber-400 font-bold'
+                    : 'text-gray-400 hover:text-amber-400'
+                }`}
+                title="Add to List"
+              >
+                <Star
+                  className={`size-3.5 ${isStarred ? 'fill-amber-400' : ''}`}
+                />
+                <span className="hidden sm:inline">Add to List</span>
+              </button>
+
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-blue-400 transition-colors"
+                title="Share Problem"
+              >
+                <Share2 className="size-3.5" />
+                <span className="hidden sm:inline">Share</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </ResizablePanel>
   )
 }
 
-function DescriptionContent({ problem }: Props) {
+function DescriptionContent({
+  problem,
+  isContestMode,
+  contestInfo,
+}: {
+  problem: Problem
+  isContestMode?: boolean
+  contestInfo?: {
+    contest_id: number
+    order?: number
+    points?: number
+    attempted_count?: number
+    submitted_count?: number
+    accepted_count?: number
+  }
+}) {
   const [showTags, setShowTags] = useState(false)
 
   return (
@@ -262,49 +702,67 @@ function DescriptionContent({ problem }: Props) {
       {/* Title & Header */}
       <div className="flex justify-between items-start mb-4">
         <h1 className="text-2xl font-bold text-white tracking-tight">
-          {problem.id}. {problem.name}
+          {isContestMode && contestInfo?.order
+            ? `Q${contestInfo.order}. ${problem.name}`
+            : `${problem.id}. ${problem.name}`}
         </h1>
         <div className="flex gap-2">
-          <a
-            href="#"
-            className="text-gray-500 hover:text-white transition-colors"
-          >
-            <span className="material-symbols-outlined text-xl">help</span>
-          </a>
+          {!isContestMode && (
+            <a
+              href="#"
+              className="text-gray-500 hover:text-white transition-colors"
+            >
+              <span className="material-symbols-outlined text-xl">help</span>
+            </a>
+          )}
         </div>
       </div>
 
       {/* Chips */}
       <div className="flex gap-2 mb-4 flex-wrap items-center">
         <DifficultyBadge difficulty={problem.difficulty ?? 'EASY'} />
-        <div className="h-5 w-px bg-gray-700" />
-        <button
-          onClick={() => setShowTags(!showTags)}
-          className="flex items-center gap-1 bg-surface-border hover:bg-muted px-2 py-0.5 rounded-full text-xs text-gray-300 transition-colors group"
-        >
-          <span className="material-symbols-outlined text-xs">sell</span>
-          Topics
-          <span
-            className={`material-symbols-outlined text-sm transition-transform duration-200 ${showTags ? 'rotate-180' : ''}`}
-          >
-            keyboard_arrow_down
+        {isContestMode && contestInfo?.points && (
+          <span className="bg-primary/20 text-primary border border-primary/30 text-xs font-bold px-2.5 py-0.5 rounded-full">
+            {contestInfo.points} Points
           </span>
-        </button>
+        )}
+        {!isContestMode && (
+          <>
+            <div className="h-5 w-px bg-gray-700" />
+            <button
+              onClick={() => setShowTags(!showTags)}
+              className="flex items-center gap-1 bg-surface-border hover:bg-muted px-2 py-0.5 rounded-full text-xs text-gray-300 transition-colors group"
+            >
+              <span className="material-symbols-outlined text-xs">sell</span>
+              Topics
+              <span
+                className={`material-symbols-outlined text-sm transition-transform duration-200 ${
+                  showTags ? 'rotate-180' : ''
+                }`}
+              >
+                keyboard_arrow_down
+              </span>
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Tags List */}
-      {showTags && problem.tags && problem.tags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in duration-200">
-          {problem.tags.map((tag) => (
-            <span
-              key={tag.id}
-              className="px-2 py-1 rounded bg-surface-border text-xs text-gray-400 font-medium hover:text-white transition-colors cursor-default"
-            >
-              {tag.tags}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Tags List (Hidden during contest) */}
+      {!isContestMode &&
+        showTags &&
+        problem.tags &&
+        problem.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in duration-200">
+            {problem.tags.map((tag) => (
+              <span
+                key={tag.id}
+                className="px-2 py-1 rounded bg-surface-border text-xs text-gray-400 font-medium hover:text-white transition-colors cursor-default"
+              >
+                {tag.tags}
+              </span>
+            ))}
+          </div>
+        )}
 
       {/* Problem Text */}
       <div className="text-sm text-gray-300 leading-relaxed space-y-4">
@@ -313,41 +771,6 @@ function DescriptionContent({ problem }: Props) {
             __html: problem?.problem_description ?? '',
           }}
         ></div>
-
-        <div className="mt-12 border-t border-surface-border pt-6 flex flex-wrap gap-4">
-          <div className="flex items-center gap-1 cursor-pointer group">
-            <span className="material-symbols-outlined text-gray-500 group-hover:text-green-500 transition-colors text-xl">
-              thumb_up
-            </span>
-            <span className="text-gray-500 text-xs font-bold group-hover:text-white">
-              24.5K
-            </span>
-          </div>
-          <div className="flex items-center gap-1 cursor-pointer group">
-            <span className="material-symbols-outlined text-gray-500 group-hover:text-red-500 transition-colors text-xl">
-              thumb_down
-            </span>
-            <span className="text-gray-500 text-xs font-bold group-hover:text-white">
-              1.2K
-            </span>
-          </div>
-          <div className="flex items-center gap-1 cursor-pointer group ml-auto">
-            <span className="material-symbols-outlined text-gray-500 group-hover:text-yellow-400 transition-colors text-xl">
-              star
-            </span>
-            <span className="text-gray-500 text-xs font-bold group-hover:text-white">
-              Add to List
-            </span>
-          </div>
-          <div className="flex items-center gap-1 cursor-pointer group">
-            <span className="material-symbols-outlined text-gray-500 group-hover:text-blue-400 transition-colors text-xl">
-              share
-            </span>
-            <span className="text-gray-500 text-xs font-bold group-hover:text-white">
-              Share
-            </span>
-          </div>
-        </div>
       </div>
     </>
   )

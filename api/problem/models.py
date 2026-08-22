@@ -193,6 +193,18 @@ class Problem(models.Model):
         default="",
         help_text="Python test case generator script for programmatic generation",
     )
+    views = models.PositiveIntegerField(
+        default=0, help_text="Total views for this problem"
+    )
+    upvotes = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="liked_problems", blank=True
+    )
+    downvotes = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="disliked_problems", blank=True
+    )
+    favorited_by = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="favorite_problems", blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

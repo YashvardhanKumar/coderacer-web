@@ -20,6 +20,7 @@ interface Props {
   setActiveCase: (index: number) => void
   sampleTestcases: TestcaseList[]
   setSampleTestcases: React.Dispatch<React.SetStateAction<TestcaseList[]>>
+  isContestMode?: boolean
 }
 
 export default function TestPanel({
@@ -36,6 +37,7 @@ export default function TestPanel({
   setActiveCase,
   sampleTestcases,
   setSampleTestcases,
+  isContestMode = false,
 }: Props) {
   const autoResize = (el: HTMLTextAreaElement | null) => {
     if (el) {
@@ -119,6 +121,12 @@ export default function TestPanel({
   const getTabStatusClasses = (index: number, isSubmit?: boolean) => {
     const result = isSubmit ? submitData?.[index] : runData?.[index]
     const isActive = activeCase === index
+
+    if (isContestMode && !isSubmit) {
+      return isActive
+        ? 'bg-surface-border text-white border-surface-border'
+        : 'text-gray-400 hover:text-white hover:bg-surface-border border-transparent'
+    }
 
     if (result) {
       const isAccepted = result.status?.id === 3
@@ -343,11 +351,22 @@ export default function TestPanel({
                 className="space-y-3 pb-3 animate-in fade-in duration-200"
               >
                 <div className="flex items-center gap-3">
-                  <div
-                    className={`font-bold ${runData[activeCase]?.status?.id === 3 ? 'text-green-500' : 'text-red-500'}`}
-                  >
-                    {runData[activeCase]?.status?.description}
-                  </div>
+                  {isContestMode ? (
+                    <div className="font-bold text-gray-200 flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-primary inline-block" />
+                      Executed
+                    </div>
+                  ) : (
+                    <div
+                      className={`font-bold ${
+                        runData[activeCase]?.status?.id === 3
+                          ? 'text-green-500'
+                          : 'text-red-500'
+                      }`}
+                    >
+                      {runData[activeCase]?.status?.description}
+                    </div>
+                  )}
                   {runData[activeCase]?.user_time_ms !== undefined && (
                     <span className="text-xs font-mono text-gray-400">
                       · {Math.round(runData[activeCase].user_time_ms)} ms
@@ -359,7 +378,9 @@ export default function TestPanel({
                     <button
                       key={index}
                       onClick={() => setActiveCase(index)}
-                      className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 border ${getTabStatusClasses(index)}`}
+                      className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 border ${getTabStatusClasses(
+                        index
+                      )}`}
                     >
                       Case {index + 1}
                     </button>
@@ -370,6 +391,7 @@ export default function TestPanel({
                   result={runData[activeCase]}
                   testcase={sampleTestcases[activeCase]}
                   variables={problem.variables}
+                  hideExpected={isContestMode}
                 />
               </div>
             ) : (
