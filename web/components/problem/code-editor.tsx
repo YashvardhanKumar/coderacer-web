@@ -36,6 +36,8 @@ interface Props {
   onMaximize?: () => void
   onRestore?: () => void
   ref?: React.Ref<ImperativePanelHandle>
+  isContestMode?: boolean
+  contestId?: number
 }
 
 function CodeEditor({
@@ -45,6 +47,8 @@ function CodeEditor({
   onMaximize,
   onRestore,
   ref,
+  isContestMode = false,
+  contestId,
 }: Props) {
   const [language, setLanguage] = useState<Language>(
     user?.default_lang ?? Language.CPP
@@ -187,13 +191,17 @@ function CodeEditor({
     }
 
     try {
-      const response = await apiFetch('engine/submit-stream/?mode=run', {
+      const runUrl = contestId
+        ? `engine/submit-stream/?mode=run&contest_id=${contestId}`
+        : 'engine/submit-stream/?mode=run'
+      const response = await apiFetch(runUrl, {
         method: 'POST',
         body: JSON.stringify({
           problem_id: problem.id,
           source_code: code,
           language: language,
           language_id: LanguageCodes[language],
+          contest_id: contestId,
           custom_testcases: sampleTestcases.map((tc) => ({
             id: tc.id,
             input: tc.input,
@@ -270,13 +278,17 @@ function CodeEditor({
     }
 
     try {
-      const response = await apiFetch('engine/submit-stream/?mode=submit', {
+      const submitUrl = contestId
+        ? `engine/submit-stream/?mode=submit&contest_id=${contestId}`
+        : 'engine/submit-stream/?mode=submit'
+      const response = await apiFetch(submitUrl, {
         method: 'POST',
         body: JSON.stringify({
           problem_id: problem.id,
           source_code: code,
           language: language,
           language_id: LanguageCodes[language],
+          contest_id: contestId,
         }),
       })
 
@@ -442,6 +454,7 @@ function CodeEditor({
                 setActiveCase={setActiveCase}
                 sampleTestcases={sampleTestcases}
                 setSampleTestcases={setSampleTestcases}
+                isContestMode={isContestMode}
               />
             </div>
           </ResizablePanel>

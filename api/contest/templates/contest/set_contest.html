@@ -1,0 +1,491 @@
+{% extends "problem/rootops_base.html" %}
+{% load i18n static %}
+
+{% block rootops_extra_style %}
+<style>
+.contest-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 20px;
+}
+@media (max-width: 1024px) {
+    .contest-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 24px;
+    color: #f8fafc;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+}
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+.card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.form-group {
+    margin-bottom: 18px;
+}
+.form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 6px;
+}
+.custom-input {
+    width: 100%;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    color: #f8fafc;
+    padding: 10px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+.custom-input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+.helper-text {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 4px;
+}
+.btn-primary {
+    background: #0284c7;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+.btn-primary:hover {
+    background: #0369a1;
+}
+.btn-secondary {
+    background: #334155;
+    color: #f8fafc;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.btn-secondary:hover {
+    background: #475569;
+}
+.btn-danger {
+    background: #dc2626;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-danger:hover {
+    background: #b91c1c;
+}
+.quick-fill-btn {
+    background: #0f766e;
+    color: #ccfbf1;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    margin-left: 8px;
+}
+.quick-fill-btn:hover {
+    background: #115e59;
+}
+.problem-row {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.badge-easy { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 11px; padding: 2px 8px; border-radius: 9999px; }
+.badge-medium { background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); font-size: 11px; padding: 2px 8px; border-radius: 9999px; }
+.badge-hard { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 11px; padding: 2px 8px; border-radius: 9999px; }
+.badge-weekly { background: #6366f1; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+.badge-custom { background: #64748b; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; text-transform: uppercase; }
+.points-tag { background: #3b82f6; color: white; font-weight: bold; font-size: 12px; padding: 2px 8px; border-radius: 4px; }
+.contest-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 10px;
+}
+.contest-table th {
+    text-align: left;
+    padding: 10px;
+    background: #0f172a;
+    color: #94a3b8;
+    border-bottom: 1px solid #334155;
+    font-size: 12px;
+}
+.contest-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid #1e293b;
+}
+.contest-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+</style>
+{% endblock %}
+
+{% block rootops_content %}
+<div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: #f8fafc; margin: 0;">
+                <i class="fas fa-trophy" style="color: #f59e0b; margin-right: 10px;"></i>
+                Contest Question Setter & Management
+            </h1>
+            <p style="color: #94a3b8; font-size: 14px; margin-top: 4px;">
+                Schedule Weekly or Custom contests, set solving time duration, and attach/create fresh problems with hardness points.
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'set_contest' %}" class="btn-primary">
+                <i class="fas fa-plus"></i> New Contest
+            </a>
+            <a href="/contest" target="_blank" class="btn-secondary">
+                <i class="fas fa-external-link-alt"></i> Contest Hub
+            </a>
+        </div>
+    </div>
+
+    <div class="contest-grid">
+        <!-- Contest Setup Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-edit"></i>
+                    {% if contest %}Edit Contest: {{ contest.title }}{% else %}Create New Contest{% endif %}
+                </div>
+                {% if contest %}
+                    <span class="badge-{{ contest.is_weekly|yesno:'weekly,custom' }}">
+                        {{ contest.is_weekly|yesno:'WEEKLY RUN,CUSTOM' }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <form method="post" action="">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save_contest">
+
+                <div class="form-group">
+                    <label for="title">
+                        Contest Title
+                        <span style="font-size: 11px; font-weight: normal; color: #64748b;">(Leave blank to auto-name: <b>{{ next_weekly_name }}</b>)</span>
+                    </label>
+                    <input type="text" name="title" id="title" class="custom-input"
+                           placeholder="e.g. {{ next_weekly_name }} (or custom name)"
+                           value="{% if contest %}{{ contest.title }}{% endif %}">
+                    <div class="helper-text">
+                        * If left blank, it automatically increments as "Weekly run &lt;number&gt;".
+                        <br>* If custom name is entered (and not Weekly run), it is classified as a Custom Contest.
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="start_time">
+                        Start Date & Time (UTC)
+                        <button type="button" class="quick-fill-btn" onclick="document.getElementById('start_time').value = '{{ next_sat_iso }}'">
+                            <i class="fas fa-calendar-check"></i> Next Saturday 8:00 PM
+                        </button>
+                    </label>
+                    <input type="datetime-local" name="start_time" id="start_time" class="custom-input" required
+                           value="{% if contest %}{{ contest.start_time|date:'Y-m-d\TH:i' }}{% else %}{{ next_sat_iso }}{% endif %}">
+                </div>
+
+                <div class="form-group">
+                    <label for="duration_minutes">
+                        Contest Duration (Minutes)
+                    </label>
+                    <input type="number" name="duration_minutes" id="duration_minutes" class="custom-input" min="10" max="600" required
+                           value="{% if contest %}{{ contest.duration_minutes }}{% else %}90{% endif %}">
+                    <div class="helper-text">Default standard contest is 90 minutes (1.5 hours).</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Contest Description / Instructions</label>
+                    <textarea name="description" id="description" class="custom-input" rows="3"
+                              placeholder="Welcome to CodeRacer Weekly Contest! Solve 4 problems in 90 minutes. Ranking is based on score points and completion time.">{% if contest %}{{ contest.description }}{% endif %}</textarea>
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="is_published" id="is_published" style="transform: scale(1.2);"
+                           {% if not contest or contest.is_published %}checked{% endif %}>
+                    <label for="is_published" style="margin: 0; cursor: pointer; color: #f8fafc;">Published (Visible to users on Contest Hub)</label>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-save"></i> {% if contest %}Update Contest Details{% else %}Save & Continue to Problems{% endif %}
+                    </button>
+                    {% if contest %}
+                        <button type="button" class="btn-danger" onclick="if(confirm('Are you sure you want to delete this contest?')) { document.getElementById('delete-contest-form').submit(); }">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    {% endif %}
+                </div>
+            </form>
+
+            {% if contest %}
+            <form id="delete-contest-form" method="post" action="" style="display: none;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_contest">
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- Problems Setter Card -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-list-ol"></i>
+                    Contest Problems & Points
+                </div>
+                {% if contest %}
+                    <span style="font-size: 13px; color: #94a3b8;">
+                        Total: <b>{{ contest_problems|length }}</b> questions
+                    </span>
+                {% endif %}
+            </div>
+
+            {% if not contest %}
+                <div style="text-align: center; padding: 40px 20px; color: #64748b;">
+                    <i class="fas fa-arrow-left" style="font-size: 32px; margin-bottom: 12px; display: block; color: #38bdf8;"></i>
+                    Please save the contest details on the left first before adding questions.
+                </div>
+            {% else %}
+                <!-- Problem List -->
+                <div style="margin-bottom: 20px;">
+                    {% if contest_problems %}
+                        {% for cp in contest_problems %}
+                            <div class="problem-row">
+                                <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                                    <div style="font-size: 18px; font-weight: 800; color: #38bdf8; min-width: 32px;">
+                                        Q{{ cp.order }}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 700; font-size: 14px; color: #f8fafc;">
+                                            {{ cp.problem.name }}
+                                        </div>
+                                        <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+                                            <span class="badge-{{ cp.problem.difficulty|lower }}">{{ cp.problem.difficulty }}</span>
+                                            <form method="post" action="" style="display: inline-flex; align-items: center; gap: 4px; margin: 0;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="update_problem_points">
+                                                <input type="hidden" name="contest_problem_id" value="{{ cp.id }}">
+                                                <label style="font-size: 11px; color: #94a3b8; margin: 0;">Points:</label>
+                                                <input type="number" name="points" value="{{ cp.points }}" min="1" max="100" class="custom-input" style="width: 60px; padding: 2px 6px; font-size: 12px; height: 24px;">
+                                                <button type="submit" class="btn-secondary" style="padding: 2px 6px; font-size: 11px; height: 24px;" title="Update points">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                            <a href="{% url 'add_problem_custom' %}?problem_id={{ cp.problem.id }}&step=1" target="_blank" style="color: #64748b; font-size: 11px; text-decoration: underline;">
+                                                Edit Problem Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <form method="post" action="" style="margin: 0; margin-left: 8px;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="remove_problem">
+                                    <input type="hidden" name="contest_problem_id" value="{{ cp.id }}">
+                                    <button type="submit" class="btn-danger" title="Remove from contest">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="background: #0f172a; border: 1px dashed #334155; border-radius: 8px; padding: 24px; text-align: center; color: #64748b;">
+                            No questions attached to this contest yet. Add questions below!
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Add Problem Form -->
+                <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 18px;">
+                    <div style="font-weight: 700; font-size: 14px; color: #38bdf8; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><i class="fas fa-plus-circle"></i> Add Question to Contest</span>
+                        <a href="{% url 'add_problem_custom' %}" target="_blank" class="btn-secondary" style="font-size: 11px; padding: 3px 8px;">
+                            <i class="fas fa-sparkles"></i> Create New Fresh Problem
+                        </a>
+                    </div>
+                    <form method="post" action="">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_problem">
+
+                        <div class="form-group">
+                            <label for="problem_id">Select Problem</label>
+                            <select name="problem_id" id="problem_id" class="custom-input" required onchange="autoFillPoints()">
+                                <option value="">-- Choose Problem --</option>
+                                {% for p in available_problems %}
+                                    <option value="{{ p.id }}" data-diff="{{ p.difficulty }}">{{ p.id }}. {{ p.name }} ({{ p.difficulty }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                                <label for="order">Question Order (Q#)</label>
+                                <input type="number" name="order" id="order" class="custom-input" min="1" max="20"
+                                       value="{{ contest_problems|length|add:1 }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="points">
+                                    Points Awarded
+                                    <span style="font-size: 10px; color: #64748b;">(Setter custom points, e.g. 2, 3, 4, 5, 6, 7, 8, 10)</span>
+                                </label>
+                                <input type="number" name="points" id="points" class="custom-input" min="1" max="100" value="3" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+                            <i class="fas fa-plus"></i> Attach Question Q<span id="order-preview">{{ contest_problems|length|add:1 }}</span>
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- All Contests Table -->
+    <div class="card" style="margin-top: 24px;">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-calendar-alt"></i>
+                All Scheduled & Past Contests
+            </div>
+            <span style="font-size: 13px; color: #94a3b8;">
+                Total Contests: <b>{{ all_contests|length }}</b>
+            </span>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="contest-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Start Time (UTC)</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Questions</th>
+                        <th>Registrations</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in all_contests %}
+                        <tr>
+                            <td style="font-weight: 700;">
+                                <a href="{% url 'set_contest_edit' contest_id=c.id %}" style="color: #38bdf8; text-decoration: none;">
+                                    {{ c.title }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge-{{ c.is_weekly|yesno:'weekly,custom' }}">
+                                    {{ c.is_weekly|yesno:'WEEKLY,CUSTOM' }}
+                                </span>
+                            </td>
+                            <td style="color: #94a3b8;">{{ c.start_time|date:"M d, Y H:i" }}</td>
+                            <td>{{ c.duration_minutes }} mins</td>
+                            <td>
+                                {% if c.status == "UPCOMING" %}
+                                    <span style="color: #38bdf8; font-weight: 600;">Upcoming</span>
+                                {% elif c.status == "ONGOING" %}
+                                    <span style="color: #4ade80; font-weight: 700;">● Live Now</span>
+                                {% else %}
+                                    <span style="color: #64748b;">Past</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ c.contest_problems.count }} Qs</td>
+                            <td>{{ c.registrations.count }} users</td>
+                            <td>
+                                <div style="display: flex; gap: 6px;">
+                                    <a href="{% url 'set_contest_edit' contest_id=c.id %}" class="btn-secondary" style="padding: 4px 8px; font-size: 11px;">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <a href="/contest/{{ c.id }}" target="_blank" class="btn-secondary" style="padding: 4px 8px; font-size: 11px;">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: #64748b; padding: 20px;">
+                                No contests created yet. Use the form above to schedule your first Weekly run contest!
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function autoFillPoints() {
+    const sel = document.getElementById('problem_id');
+    const opt = sel.options[sel.selectedIndex];
+    const diff = opt.getAttribute('data-diff');
+    const ptsInput = document.getElementById('points');
+    if (diff === 'EASY') {
+        ptsInput.value = 3;
+    } else if (diff === 'MEDIUM') {
+        ptsInput.value = 5;
+    } else if (diff === 'HARD') {
+        ptsInput.value = 7;
+    }
+}
+document.getElementById('order')?.addEventListener('input', function(e) {
+    const p = document.getElementById('order-preview');
+    if (p) p.innerText = e.target.value;
+});
+</script>
+{% endblock %}

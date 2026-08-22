@@ -169,6 +169,12 @@ class ProblemDetailSerializer(serializers.ModelSerializer):
     variables = VariableSerializer(many=True, read_only=True)
     is_multi = serializers.SerializerMethodField()
     success_rate = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    dislikes_count = serializers.SerializerMethodField()
+    has_liked = serializers.SerializerMethodField()
+    has_disliked = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField()
+    active_users = serializers.SerializerMethodField()
 
     class Meta:
         model = Problem
@@ -184,11 +190,47 @@ class ProblemDetailSerializer(serializers.ModelSerializer):
             "variables",
             "validator_type",
             "custom_validator",
+            "views",
+            "likes_count",
+            "dislikes_count",
+            "has_liked",
+            "has_disliked",
+            "is_favorited",
+            "active_users",
             "created_at",
             "is_multi",
             "success_rate",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "views", "created_at"]
+
+    def get_likes_count(self, obj):
+        return obj.upvotes.count()
+
+    def get_dislikes_count(self, obj):
+        return obj.downvotes.count()
+
+    def get_has_liked(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            return obj.upvotes.filter(id=request.user.id).exists()
+        return False
+
+    def get_has_disliked(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            return obj.downvotes.filter(id=request.user.id).exists()
+        return False
+
+    def get_is_favorited(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            return obj.favorited_by.filter(id=request.user.id).exists()
+        return False
+
+    def get_active_users(self, obj):
+        from .utils import get_active_problem_users_count
+
+        return get_active_problem_users_count(obj.id)
 
     def get_is_multi(self, obj):
         methods = list(obj.methods.all())
@@ -387,6 +429,7 @@ class DiscussDetailSerializer(serializers.ModelSerializer):
         child=serializers.IntegerField(), write_only=True, required=False
     )
     comments = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
     upvote_count = serializers.SerializerMethodField()
     downvote_count = serializers.SerializerMethodField()
     has_upvoted = serializers.SerializerMethodField()
@@ -407,6 +450,7 @@ class DiscussDetailSerializer(serializers.ModelSerializer):
             "views",
             "upvote_count",
             "downvote_count",
+            "comment_count",
             "has_upvoted",
             "has_downvoted",
             "is_editorial",
@@ -425,6 +469,9 @@ class DiscussDetailSerializer(serializers.ModelSerializer):
         # Only return top-level comments (parent=None)
         comments = obj.comments.filter(parent=None)
         return CommentSerializer(comments, many=True, context=self.context).data
+
+    def get_comment_count(self, obj):
+        return obj.comments.count()
 
     def get_upvote_count(self, obj):
         return obj.upvotes.count()

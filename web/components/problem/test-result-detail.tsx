@@ -11,12 +11,14 @@ interface TestResultDetailProps {
   } | null
   testcase?: TestcaseList
   variables?: Variable[]
+  hideExpected?: boolean
 }
 
 export default function TestResultDetail({
   result,
   testcase,
   variables,
+  hideExpected = false,
 }: TestResultDetailProps) {
   return (
     <div className="space-y-3 w-full max-w-2xl shrink-0">
@@ -73,14 +75,16 @@ export default function TestResultDetail({
         </div>
       </div>
 
-      <div className="space-y-3 font-mono text-xs">
-        <p className="text-gray-400 mb-1">Expected Output</p>
-        <div className="bg-surface-border p-2 rounded text-white border border-gray-700 w-full">
-          <code className="whitespace-pre-wrap break-all">
-            {result?.expected_output}
-          </code>
+      {!hideExpected && (
+        <div className="space-y-3 font-mono text-xs">
+          <p className="text-gray-400 mb-1">Expected Output</p>
+          <div className="bg-surface-border p-2 rounded text-white border border-gray-700 w-full">
+            <code className="whitespace-pre-wrap break-all">
+              {result?.expected_output}
+            </code>
+          </div>
         </div>
-      </div>
+      )}
 
       {result?.stderr && (
         <div className="space-y-3 font-mono text-xs">

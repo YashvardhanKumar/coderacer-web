@@ -1,6 +1,6 @@
 'use client'
 
-// Profile page for displaying user statistics and activity.
+import { useEffect, useMemo, useState } from 'react'
 import Header from '@/components/header'
 import PageTransition from '@/components/page-transition'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -16,17 +16,33 @@ import {
   LanguageDisplayNames,
   ProfileProblemSummary,
   ProfileSubmission,
+  ProfileProblemDiscussion,
+  ProfileGeneralDiscussion,
   Status,
   UserProfile,
 } from '@/lib/models'
 import { format, parseISO } from 'date-fns'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
 import useSWR, { mutate } from 'swr'
 import { toast } from 'sonner'
 import { useAuth } from '@/components/auth-provider'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  MessageSquare,
+  ThumbsUp,
+  ThumbsDown,
+  Eye,
+  CheckCircle2,
+  Clock,
+  Code2,
+  FileCode2,
+  FileText,
+  Pin,
+  Sparkles,
+  ExternalLink,
+  Star,
+} from 'lucide-react'
 
 const difficultyColors: Record<Difficulty, string> = {
   [Difficulty.EASY]: 'text-green-500 bg-green-500/10',
@@ -80,6 +96,7 @@ export default function ProfilePage() {
         ([, count]) => count > 0
       )
     : []
+
   const saveProfile = async () => {
     setIsSaving(true)
     try {
@@ -116,11 +133,43 @@ export default function ProfilePage() {
   const showLoading = loading || isLoading
 
   if (error && !showLoading) {
+    const isAuthError =
+      error?.response?.status === 401 || error?.status === 401 || !user
+
     return (
-      <div className="min-h-screen bg-background-light dark:bg-background-dark">
+      <div className="min-h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-white flex flex-col font-sans">
         <Header />
-        <main className="mx-auto max-w-350 p-8 text-red-500">
-          Failed to load profile.
+        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
+          <div className="size-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-4">
+            <Sparkles className="size-8" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">
+            {isAuthError ? 'Authentication Required' : 'Unable to Load Profile'}
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-text-secondary mb-6 leading-relaxed">
+            {isAuthError
+              ? 'Your session may have expired. Please sign in to view and manage your profile statistics.'
+              : error?.message ||
+                'A network error occurred while fetching your profile.'}
+          </p>
+          <div className="flex gap-3">
+            {isAuthError ? (
+              <Link href="/login">
+                <Button className="bg-primary hover:bg-primary/90 text-white font-bold px-6 py-2 rounded-xl text-xs shadow-md">
+                  Sign In to Account
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                onClick={() =>
+                  mutate(`auth/users/profile/?year=${selectedYear}`)
+                }
+                className="bg-primary hover:bg-primary/90 text-white font-bold px-6 py-2 rounded-xl text-xs shadow-md"
+              >
+                Retry Loading
+              </Button>
+            )}
+          </div>
         </main>
       </div>
     )
@@ -132,7 +181,8 @@ export default function ProfilePage() {
       <PageTransition>
         <main className="mx-auto flex max-w-350 flex-col gap-6 p-4 md:p-8">
           <section className="grid gap-6 lg:grid-cols-[320px_1fr]">
-            <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-surface-border dark:bg-surface-dark">
+            {/* Left Sidebar Profile Info */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-surface-border dark:bg-surface-dark">
               {showLoading ? (
                 <div className="space-y-6">
                   <div className="flex flex-col items-center gap-4">
@@ -266,8 +316,10 @@ export default function ProfilePage() {
               )}
             </div>
 
+            {/* Right Column: Progress, Heatmap, Merged Submissions Card & Merged Discussions Card */}
             <div className="flex flex-col gap-6">
-              <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-surface-border dark:bg-surface-dark">
+              {/* Progress Card */}
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-surface-border dark:bg-surface-dark">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -301,7 +353,8 @@ export default function ProfilePage() {
                 </div>
               </section>
 
-              <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-surface-border dark:bg-surface-dark">
+              {/* Heatmap Card */}
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-surface-border dark:bg-surface-dark">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -343,22 +396,25 @@ export default function ProfilePage() {
                   <Heatmap days={data?.heatmap || []} />
                 )}
               </section>
+
+              {/* 2 Tabbed Cards Side-by-Side:
+                  1. Merged Problems & Submissions Card (Submissions, Solved, Attempted)
+                  2. Merged Discussions Card (Problem Solutions/Discussions, General Discussions)
+              */}
               <section className="grid gap-6 xl:grid-cols-2">
-                <ActivityList
-                  title="Recent Submissions"
+                {/* Merged Problems & Submissions Card */}
+                <SubmissionsTabCard
                   submissions={data?.recent_submissions}
+                  solvedProblems={data?.solved_problems}
+                  attemptedProblems={data?.attempted_problems}
+                  favoriteProblems={data?.favorite_problems}
                   isLoading={showLoading}
                 />
-                <ProblemList
-                  title="Solved Problems"
-                  problems={data?.solved_problems}
-                  empty="No accepted solutions yet."
-                  isLoading={showLoading}
-                />
-                <ProblemList
-                  title="Attempted Problems"
-                  problems={data?.attempted_problems}
-                  empty="No attempted-only problems yet."
+
+                {/* Merged Discussions Card */}
+                <DiscussionsTabCard
+                  problemDiscussions={data?.problem_discussions}
+                  generalDiscussions={data?.general_discussions}
                   isLoading={showLoading}
                 />
               </section>
@@ -389,7 +445,7 @@ function ProfileField({
 
 function StatTile({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-md bg-slate-50 p-3 dark:bg-background-dark">
+    <div className="rounded-xl bg-slate-50 p-3 dark:bg-background-dark border border-slate-100 dark:border-surface-border">
       <div className="text-xl font-bold text-slate-900 dark:text-white">
         {value}
       </div>
@@ -409,7 +465,7 @@ function DifficultyProgress({
   data: UserProfile | undefined
   isLoading: boolean
 }) {
-  if (isLoading || !data) return <Skeleton className="h-24 w-full rounded-md" />
+  if (isLoading || !data) return <Skeleton className="h-24 w-full rounded-xl" />
 
   const stats = data.stats.difficulty_breakdown[difficulty]
   const attempted = Math.max(stats.attempted, stats.solved)
@@ -417,10 +473,10 @@ function DifficultyProgress({
     attempted === 0 ? 0 : Math.round((stats.solved / attempted) * 100)
 
   return (
-    <div className="rounded-md bg-slate-50 p-4 dark:bg-background-dark">
+    <div className="rounded-xl bg-slate-50 p-4 dark:bg-background-dark border border-slate-100 dark:border-surface-border">
       <div className="flex items-center justify-between">
         <span
-          className={`rounded px-2 py-1 text-xs font-bold ${difficultyColors[difficulty]}`}
+          className={`rounded-md px-2 py-1 text-xs font-bold ${difficultyColors[difficulty]}`}
         >
           {difficulty}
         </span>
@@ -494,102 +550,413 @@ function Heatmap({ days }: { days: HeatmapDay[] }) {
   )
 }
 
-function ActivityList({
-  title,
+// ----------------------------------------------------------------------------
+// MERGED CARD 1: Problems & Submissions Activity (3 Tabs)
+// ----------------------------------------------------------------------------
+function SubmissionsTabCard({
   submissions,
+  solvedProblems,
+  attemptedProblems,
+  favoriteProblems,
   isLoading,
 }: {
-  title: string
-  submissions: ProfileSubmission[] | undefined
+  submissions?: ProfileSubmission[]
+  solvedProblems?: ProfileProblemSummary[]
+  attemptedProblems?: ProfileProblemSummary[]
+  favoriteProblems?: ProfileProblemSummary[]
   isLoading: boolean
 }) {
+  const [activeTab, setActiveTab] = useState<
+    'submissions' | 'solved' | 'attempted' | 'favorites'
+  >('submissions')
+
   return (
-    <section className="rounded-lg border border-slate-200 col-span-2 bg-white p-6 shadow-sm dark:border-surface-border dark:bg-surface-dark h-96 flex flex-col relative">
-      <h2 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">
-        {title}
-      </h2>
-      <div className="space-y-3 overflow-y-auto flex-1 min-h-0 relative pr-1">
+    <div className="rounded-2xl border border-slate-200 bg-white dark:border-surface-border dark:bg-surface-dark h-[440px] flex flex-col shadow-sm overflow-hidden">
+      {/* Header & Tabs */}
+      <div className="p-5 pb-3 border-b border-slate-100 dark:border-surface-border">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+            <FileCode2 className="size-4.5 text-primary" />
+            <span>Problem Activity</span>
+          </h3>
+        </div>
+
+        {/* Tab Pills */}
+        <div className="flex gap-1 bg-slate-100 dark:bg-background-dark p-1 rounded-xl">
+          <button
+            onClick={() => setActiveTab('submissions')}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'submissions'
+                ? 'bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Clock className="size-3" />
+            <span className="hidden sm:inline">Submissions</span>
+            <span className="sm:hidden">Subs</span>
+            <span className="text-[10px] font-mono opacity-70">
+              ({submissions?.length || 0})
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('solved')}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'solved'
+                ? 'bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <CheckCircle2 className="size-3 text-green-500" />
+            <span>Solved</span>
+            <span className="text-[10px] font-mono opacity-70">
+              ({solvedProblems?.length || 0})
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('attempted')}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'attempted'
+                ? 'bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Code2 className="size-3 text-amber-500" />
+            <span className="hidden sm:inline">Attempted</span>
+            <span className="sm:hidden">Att.</span>
+            <span className="text-[10px] font-mono opacity-70">
+              ({attemptedProblems?.length || 0})
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('favorites')}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'favorites'
+                ? 'bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Star className="size-3 text-amber-400 fill-amber-400" />
+            <span className="hidden sm:inline">Favorites</span>
+            <span className="sm:hidden">Favs</span>
+            <span className="text-[10px] font-mono opacity-70">
+              ({favoriteProblems?.length || 0})
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content List */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
         {isLoading ? (
           [1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-md" />
+            <Skeleton key={i} className="h-14 w-full rounded-xl" />
           ))
-        ) : !submissions || submissions.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-text-secondary">
-            No submissions yet.
-          </p>
+        ) : activeTab === 'submissions' ? (
+          !submissions || submissions.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-500 dark:text-text-secondary">
+              No recent submissions found.
+            </div>
+          ) : (
+            submissions.map((sub) => (
+              <Link
+                key={sub.id}
+                href={`/problems/${sub.problem_id}?tab=submissions&submissionId=${sub.id}`}
+                className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-background-dark/70 dark:hover:bg-background-dark border border-slate-100 dark:border-surface-border transition-colors group"
+              >
+                <div className="min-w-0">
+                  <div className="font-bold text-xs text-slate-900 dark:text-white truncate group-hover:text-primary transition-colors">
+                    {sub.problem_name}
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-text-secondary mt-0.5">
+                    {sub.language_display} ·{' '}
+                    {formatInUserTimezone(sub.created_at, 'MMM d, HH:mm')}
+                  </div>
+                </div>
+
+                <span
+                  className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                    sub.status === Status.SUCCESS
+                      ? 'bg-green-500/10 text-green-500'
+                      : 'bg-red-500/10 text-red-500'
+                  }`}
+                >
+                  {sub.status_display}
+                </span>
+              </Link>
+            ))
+          )
+        ) : activeTab === 'solved' ? (
+          !solvedProblems || solvedProblems.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-500 dark:text-text-secondary">
+              No solved problems yet. Keep practicing!
+            </div>
+          ) : (
+            solvedProblems.map((prob) => (
+              <Link
+                key={prob.id}
+                href={`/problems/${prob.id}`}
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-background-dark/70 dark:hover:bg-background-dark border border-slate-100 dark:border-surface-border transition-colors group"
+              >
+                <div className="font-bold text-xs text-slate-900 dark:text-white truncate group-hover:text-primary transition-colors">
+                  {prob.id}. {prob.name}
+                </div>
+                <span
+                  className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${difficultyColors[prob.difficulty]}`}
+                >
+                  {prob.difficulty}
+                </span>
+              </Link>
+            ))
+          )
+        ) : activeTab === 'attempted' ? (
+          !attemptedProblems || attemptedProblems.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-500 dark:text-text-secondary">
+              No attempted problems pending completion.
+            </div>
+          ) : (
+            attemptedProblems.map((prob) => (
+              <Link
+                key={prob.id}
+                href={`/problems/${prob.id}`}
+                className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-background-dark/70 dark:hover:bg-background-dark border border-slate-100 dark:border-surface-border transition-colors group"
+              >
+                <div className="font-bold text-xs text-slate-900 dark:text-white truncate group-hover:text-primary transition-colors">
+                  {prob.id}. {prob.name}
+                </div>
+                <span
+                  className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${difficultyColors[prob.difficulty]}`}
+                >
+                  {prob.difficulty}
+                </span>
+              </Link>
+            ))
+          )
+        ) : !favoriteProblems || favoriteProblems.length === 0 ? (
+          <div className="py-12 text-center text-xs text-slate-500 dark:text-text-secondary">
+            No favorite problems added yet. Click &quot;Add to List&quot; on any
+            problem!
+          </div>
         ) : (
-          submissions.map((submission) => (
+          favoriteProblems.map((prob) => (
             <Link
-              key={submission.id}
-              href={`/problems/${submission.problem_id}`}
-              className="flex items-center justify-between gap-4 rounded-md bg-slate-50 p-3 transition-colors hover:bg-slate-100 dark:bg-background-dark dark:hover:bg-slate-800"
+              key={prob.id}
+              href={`/problems/${prob.id}`}
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-background-dark/70 dark:hover:bg-background-dark border border-slate-100 dark:border-surface-border transition-colors group"
             >
-              <div className="min-w-0">
-                <div className="truncate font-medium text-slate-900 dark:text-white">
-                  {submission.problem_name}
+              <div className="min-w-0 pr-2">
+                <div className="font-bold text-xs text-slate-900 dark:text-white truncate group-hover:text-primary transition-colors">
+                  {prob.id}. {prob.name}
                 </div>
-                <div className="text-xs text-slate-500 dark:text-text-secondary">
-                  {submission.language_display} |{' '}
-                  {formatInUserTimezone(submission.created_at, 'MMM d, HH:mm')}
-                </div>
+                {prob.tags && prob.tags.length > 0 && (
+                  <div className="flex gap-1 mt-1 flex-wrap">
+                    {prob.tags.slice(0, 3).map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[9px] text-gray-500 bg-slate-200/50 dark:bg-surface-border/50 px-1.5 py-0.5 rounded"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <span
-                className={`shrink-0 rounded px-2 py-1 text-xs font-bold ${submission.status === Status.SUCCESS ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}
+                className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold ${difficultyColors[prob.difficulty]}`}
               >
-                {submission.status_display}
+                {prob.difficulty}
               </span>
             </Link>
           ))
         )}
       </div>
-    </section>
+    </div>
   )
 }
 
-function ProblemList({
-  title,
-  problems,
-  empty,
+// ----------------------------------------------------------------------------
+// MERGED CARD 2: Discussions & Community Activity (2 Tabs)
+// ----------------------------------------------------------------------------
+function DiscussionsTabCard({
+  problemDiscussions,
+  generalDiscussions,
   isLoading,
 }: {
-  title: string
-  problems: ProfileProblemSummary[] | undefined
-  empty: string
+  problemDiscussions?: ProfileProblemDiscussion[]
+  generalDiscussions?: ProfileGeneralDiscussion[]
   isLoading: boolean
 }) {
+  const [activeTab, setActiveTab] = useState<'problem' | 'general'>('problem')
+
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-surface-border dark:bg-surface-dark h-96 flex flex-col relative">
-      <h2 className="mb-4 text-xl font-bold text-slate-900 dark:text-white">
-        {title}
-      </h2>
-      <div className="space-y-2 overflow-y-auto flex-1 min-h-0 relative pr-1">
+    <div className="rounded-2xl border border-slate-200 bg-white dark:border-surface-border dark:bg-surface-dark h-[440px] flex flex-col shadow-sm overflow-hidden">
+      {/* Header & Tabs */}
+      <div className="p-5 pb-3 border-b border-slate-100 dark:border-surface-border">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+            <MessageSquare className="size-4.5 text-primary" />
+            <span>My Discussions & Solutions</span>
+          </h3>
+        </div>
+
+        {/* Tab Pills */}
+        <div className="flex gap-1 bg-slate-100 dark:bg-background-dark p-1 rounded-xl">
+          <button
+            onClick={() => setActiveTab('problem')}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'problem'
+                ? 'bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <FileText className="size-3" />
+            <span>Problem Solutions</span>
+            <span className="text-[10px] font-mono opacity-70">
+              ({problemDiscussions?.length || 0})
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('general')}
+            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'general'
+                ? 'bg-white dark:bg-surface-dark text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Sparkles className="size-3 text-primary" />
+            <span>General Discuss</span>
+            <span className="text-[10px] font-mono opacity-70">
+              ({generalDiscussions?.length || 0})
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tab Content List */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
         {isLoading ? (
           [1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-12 w-full rounded-md" />
+            <Skeleton key={i} className="h-16 w-full rounded-xl" />
           ))
-        ) : !problems || problems.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-text-secondary">
-            {empty}
-          </p>
-        ) : (
-          problems.map((problem) => (
-            <Link
-              key={problem.id}
-              href={`/problems/${problem.id}`}
-              className="flex items-center justify-between rounded-md bg-slate-50 p-3 hover:bg-slate-100 dark:bg-background-dark dark:hover:bg-slate-800"
-            >
-              <span className="font-medium text-slate-900 dark:text-white">
-                {problem.id}. {problem.name}
-              </span>
-              <span
-                className={`rounded px-2 py-1 text-xs font-bold ${difficultyColors[problem.difficulty]}`}
+        ) : activeTab === 'problem' ? (
+          !problemDiscussions || problemDiscussions.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-500 dark:text-text-secondary">
+              <p>No problem solutions or discussions posted yet.</p>
+              <p className="mt-1 text-[11px] opacity-70">
+                Submit an accepted solution on any problem and post your
+                solution to share with others!
+              </p>
+            </div>
+          ) : (
+            problemDiscussions.map((disc) => (
+              <Link
+                key={disc.id}
+                href={`/problems/${disc.problem_id}?tab=solutions&discussionId=${disc.id}`}
+                className="block p-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-background-dark/70 dark:hover:bg-background-dark border border-slate-100 dark:border-surface-border transition-colors group"
               >
-                {problem.difficulty}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-[11px] font-bold text-primary truncate">
+                        {disc.problem_name}
+                      </span>
+                      {disc.is_editorial && (
+                        <span className="bg-amber-500/20 text-amber-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
+                          Editorial
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-medium text-xs text-slate-900 dark:text-white line-clamp-1 group-hover:text-primary transition-colors">
+                      {disc.title}
+                    </div>
+                  </div>
+
+                  {/* Views & Likes/Dislikes */}
+                  <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-text-secondary shrink-0 pt-0.5">
+                    <span className="flex items-center gap-1">
+                      <Eye className="size-3 text-slate-400" />
+                      <span>{disc.views}</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-green-500">
+                      <ThumbsUp className="size-3" />
+                      <span>{disc.upvotes_count}</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-rose-400">
+                      <ThumbsDown className="size-3" />
+                      <span>{disc.downvotes_count}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-slate-400 dark:text-text-secondary mt-2 flex items-center justify-between">
+                  <span>
+                    {formatInUserTimezone(disc.created_at, 'MMM d, yyyy')}
+                  </span>
+                  <span className="flex items-center gap-1 text-primary group-hover:underline">
+                    View Problem <ExternalLink className="size-2.5" />
+                  </span>
+                </div>
+              </Link>
+            ))
+          )
+        ) : !generalDiscussions || generalDiscussions.length === 0 ? (
+          <div className="py-12 text-center text-xs text-slate-500 dark:text-text-secondary">
+            <p>No general discussion topics created yet.</p>
+            <Link href="/discuss/new" className="inline-block mt-2">
+              <span className="text-primary hover:underline text-xs font-bold">
+                Create your first discussion topic →
               </span>
+            </Link>
+          </div>
+        ) : (
+          generalDiscussions.map((post) => (
+            <Link
+              key={post.id}
+              href={`/discuss/${post.id}`}
+              className="block p-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-background-dark/70 dark:hover:bg-background-dark border border-slate-100 dark:border-surface-border transition-colors group"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <span className="inline-block bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full border border-primary/20 mb-1">
+                    {post.category_display || post.category}
+                  </span>
+                  <div className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1 group-hover:text-primary transition-colors">
+                    {post.title}
+                  </div>
+                </div>
+
+                {/* Views & Votes & Comments */}
+                <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-text-secondary shrink-0 pt-0.5">
+                  <span className="flex items-center gap-1">
+                    <Eye className="size-3 text-slate-400" />
+                    <span>{post.views}</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-primary font-bold">
+                    <ThumbsUp className="size-3" />
+                    <span>{post.vote_count}</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-slate-400">
+                    <MessageSquare className="size-3" />
+                    <span>{post.comments_count}</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-[10px] text-slate-400 dark:text-text-secondary mt-2 flex items-center justify-between">
+                <span>
+                  {formatInUserTimezone(post.created_at, 'MMM d, yyyy')}
+                </span>
+                <span className="flex items-center gap-1 text-primary group-hover:underline">
+                  Read Post <ExternalLink className="size-2.5" />
+                </span>
+              </div>
             </Link>
           ))
         )}
       </div>
-    </section>
+    </div>
   )
 }

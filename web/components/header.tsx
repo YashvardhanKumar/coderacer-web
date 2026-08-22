@@ -17,6 +17,8 @@ import { Skeleton } from './ui/skeleton'
 import IconButton from '@/components/icon-button'
 import { cn } from '@/lib/utils'
 
+import { usePathname } from 'next/navigation'
+
 interface HeaderProps {
   variant?: 'default' | 'problem'
 }
@@ -116,6 +118,12 @@ export function UserMenu() {
 
 export default function Header({ variant = 'default' }: HeaderProps) {
   const isProblem = variant === 'problem'
+  const pathname = usePathname()
+
+  const isProblemsActive = pathname?.startsWith('/problems')
+  const isContestActive = pathname?.startsWith('/contest')
+  const isDiscussActive = pathname?.startsWith('/discuss')
+  const isStoreActive = pathname?.startsWith('/store')
 
   return (
     <header
@@ -151,31 +159,43 @@ export default function Header({ variant = 'default' }: HeaderProps) {
           <nav className="hidden md:flex items-center gap-6">
             <Link
               href="/problems"
-              className="text-slate-900 dark:text-white text-sm font-medium leading-normal border-b-2 border-primary py-4 -my-4 transition-all"
+              className={cn(
+                'text-sm font-medium leading-normal py-4 -my-4 transition-all',
+                isProblemsActive
+                  ? 'text-slate-900 dark:text-white border-b-2 border-primary'
+                  : 'text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white hover:-translate-y-0.5'
+              )}
             >
               Problems
             </Link>
             <Link
               href="/contest"
-              className="text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white text-sm font-medium leading-normal transition-all hover:-translate-y-0.5"
+              className={cn(
+                'text-sm font-medium leading-normal py-4 -my-4 transition-all',
+                isContestActive
+                  ? 'text-slate-900 dark:text-white border-b-2 border-primary'
+                  : 'text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white hover:-translate-y-0.5'
+              )}
             >
               Contest
             </Link>
             <Link
               href="/discuss"
-              className="text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white text-sm font-medium leading-normal transition-all hover:-translate-y-0.5"
+              className={cn(
+                'text-sm font-medium leading-normal py-4 -my-4 transition-all',
+                isDiscussActive
+                  ? 'text-slate-900 dark:text-white border-b-2 border-primary'
+                  : 'text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white hover:-translate-y-0.5'
+              )}
             >
               Discuss
             </Link>
             <Link
-              href="/interview"
-              className="text-slate-500 dark:text-text-secondary hover:text-slate-900 dark:hover:text-white text-sm font-medium leading-normal transition-all hover:-translate-y-0.5"
-            >
-              Interview
-            </Link>
-            <Link
               href="/store"
-              className="text-primary text-sm font-medium leading-normal flex items-center gap-1 transition-all hover:scale-110 active:scale-95"
+              className={cn(
+                'text-primary text-sm font-medium leading-normal flex items-center gap-1 transition-all hover:scale-110 active:scale-95 py-4 -my-4',
+                isStoreActive && 'border-b-2 border-primary'
+              )}
             >
               Store
             </Link>

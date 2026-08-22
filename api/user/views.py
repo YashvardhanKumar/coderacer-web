@@ -81,20 +81,29 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"])
-    @action(detail=False, methods=["get"])
     def profile(self, request):
         """Get current user's profile, activity, and coding progress"""
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
         user = request.user
         year_param = request.query_params.get("year")
 
         now = timezone.now()
         current_year = now.year
-        join_year = user.date_joined.year
-        available_years = list(range(join_year, current_year + 1))
+        join_year = user.date_joined.year if user.date_joined else current_year
+        available_years = (
+            list(range(join_year, current_year + 1))
+            if join_year <= current_year
+            else [current_year]
+        )
 
         try:
             target_year = int(year_param) if year_param else current_year
-        except ValueError:
+        except (ValueError, TypeError):
             target_year = current_year
 
         solutions = Solution.objects.filter(user=user).select_related("problem")
@@ -209,6 +218,60 @@ class UserViewSet(viewsets.ModelViewSet):
         total_submissions = solutions.count()
         successful = solutions.filter(status=AnswerStatus.ACCEPTED).count()
 
+        from problem.models import Discuss as ProblemDiscuss
+        from discuss.models import DiscussPost
+
+        problem_discussions = [
+            {
+                "id": d.id,
+                "problem_id": d.problem_id,
+                "problem_name": d.problem.name if d.problem else "Problem",
+                "problem_difficulty": d.problem.difficulty if d.problem else "EASY",
+                "title": d.title,
+                "views": d.views,
+                "upvotes_count": d.upvotes.count(),
+                "downvotes_count": d.downvotes.count(),
+                "is_editorial": d.is_editorial,
+                "created_at": d.created_at,
+            }
+            for d in ProblemDiscuss.objects.filter(author=user)
+            .select_related("problem")
+            .prefetch_related("upvotes", "downvotes")
+            .order_by("-created_at")[:20]
+        ]
+
+        general_discussions = [
+            {
+                "id": p.id,
+                "title": p.title,
+                "category": p.category,
+                "category_display": p.get_category_display(),
+                "views": p.views,
+                "upvotes_count": p.upvotes.count(),
+                "downvotes_count": p.downvotes.count(),
+                "vote_count": p.vote_count,
+                "comments_count": p.comments_count,
+                "tags": p.tags,
+                "created_at": p.created_at,
+            }
+            for p in DiscussPost.objects.filter(author=user)
+            .prefetch_related("upvotes", "downvotes", "comments")
+            .order_by("-created_at")[:20]
+        ]
+
+        favorite_problems = [
+            {
+                "id": p.id,
+                "name": p.name,
+                "difficulty": p.difficulty,
+                "created_at": p.created_at,
+                "tags": [t.tags for t in p.tags.all()],
+            }
+            for p in user.favorite_problems.prefetch_related("tags")
+            .all()
+            .order_by("-id")
+        ]
+
         data = {
             "user": UserSerializer(user, context={"request": request}).data,
             "stats": {
@@ -236,6 +299,9 @@ class UserViewSet(viewsets.ModelViewSet):
             "attempted_problems": [
                 serialize_problem(solution) for solution in attempted_problems[:20]
             ],
+            "favorite_problems": favorite_problems,
+            "problem_discussions": problem_discussions,
+            "general_discussions": general_discussions,
             "available_years": available_years,
             "selected_year": target_year,
         }

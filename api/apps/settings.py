@@ -71,6 +71,8 @@ INSTALLED_APPS = [
     "social_django",
     "user",
     "problem.apps.ProblemConfig",
+    "contest.apps.ContestConfig",
+    "discuss.apps.DiscussConfig",
     "ai",
     "engine",
 ]

@@ -41,6 +41,14 @@ class SubmitStreamView(APIView):
             )
 
         problem = get_object_or_404(Problem, id=problem_id)
+        contest_id = request.query_params.get("contest_id") or request.data.get(
+            "contest_id"
+        )
+        contest = None
+        if contest_id:
+            from contest.models import Contest
+
+            contest = get_object_or_404(Contest, id=contest_id)
 
         if is_submit:
             testcases = Testcase.objects.filter(problem_id=problem_id).order_by("id")
@@ -118,7 +126,19 @@ class SubmitStreamView(APIView):
                     compilation_error = case_res.get("compile_output")
                 if not case_res.get("is_accepted"):
                     total_passed = False
-                yield json.dumps({"status": "case_result", "data": case_res}) + "\n"
+
+                if contest and not is_submit:
+                    # In contest mode during run, do not reveal pass/fail verdict or expected output
+                    masked_case = dict(case_res)
+                    masked_case.pop("is_accepted", None)
+                    masked_case.pop("expected_output", None)
+                    if masked_case.get("status", {}).get("id") in [3, 4]:
+                        masked_case["status"] = {"id": 3, "description": "Finished"}
+                    yield json.dumps(
+                        {"status": "case_result", "data": masked_case}
+                    ) + "\n"
+                else:
+                    yield json.dumps({"status": "case_result", "data": case_res}) + "\n"
 
             sol_id = 0
             sol_status = (
@@ -147,6 +167,13 @@ class SubmitStreamView(APIView):
                 )
                 sol_id = sol.id
                 sol_status = final_status
+
+                if contest:
+                    from contest.services import record_contest_submission
+
+                    record_contest_submission(
+                        contest, problem, request.user, final_status, results
+                    )
 
             yield json.dumps(
                 {
